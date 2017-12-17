@@ -209,7 +209,15 @@ namespace BadBattleCity
 
         internal static void UpdateMap(string[] message)
         {
-
+            for (int i = 1; i < message.Length / 3;)
+            {
+                Point point = new Point(int.Parse(message[i++]), int.Parse(message[i++]));
+                char type = message[i++][0];
+                if (type < 10)
+                    DrawCell(point, GetColor((Cells)type));
+                else
+                    DrawCell(point, GetColor((Cells)type), type);
+            }
         }
 
         public static void DownloadMap()
