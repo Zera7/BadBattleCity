@@ -135,6 +135,7 @@ namespace BadBattleCity
                     return true;
             }
             Client.Stop();
+            Client.AllMessages.Clear();
             Client = new Connector(new IPEndPoint(IPAddress.Broadcast, ServerPort), ClientPort);
             return false;
         }
