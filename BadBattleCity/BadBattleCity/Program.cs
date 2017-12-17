@@ -20,8 +20,17 @@ namespace BadBattleCity
         //    SendingField
         //}
 
+        public enum Direction
+        {
+            left,
+            right,
+            up,
+            down
+        }
+
         public const int ServerPort = 15000;
         public const int ClientPort = 14000;
+        public const int NumberOfTeams = 2;
 
         static bool IsServerRunning = false;
         static bool GameStarted = false;
@@ -39,6 +48,7 @@ namespace BadBattleCity
                 if (offerCreateServerThread.IsAlive)
                     offerCreateServerThread.Abort();
 
+            Console.CursorVisible = false;
             StartClientGame();
         }
 
@@ -89,6 +99,8 @@ namespace BadBattleCity
         {
             Map.DownloadMap();
             SendMessageToAllClients("map" + " " + GetStringMap());
+            for (int i = 0; i < Server.Clients.Count; i++)
+                Server.Send("command" + " " + i % NumberOfTeams, Server.Clients[i]);
         }
 
         private static void StartClientGame()
@@ -96,25 +108,38 @@ namespace BadBattleCity
             //Дальше подключаемся к серверу
             //Тут должна быть обработка команд полученных от сервера
             Console.WriteLine("Клиент ожидает начала игры");
+            Thread HandlingPlayerActionsThread = new Thread(Player.HandlingPlayerActions);
+            HandlingPlayerActionsThread.Start();
             while (true)
             {
-                for (int i = 0; i < Client.AllMessages.Count;)
+                Player.HandlingPlayerActions();
+                CommandProcessing();
+            }
+        }
+
+        private static void CommandProcessing()
+        {
+            for (int i = 0; i < Client.AllMessages.Count;)
+            {
+                string[] message = Encoding.UTF8.GetString(Client.AllMessages[0].Message).Split(' ');
+                Client.AllMessages.RemoveAt(0);
+                switch (message[0])
                 {
-                    string[] message = Encoding.UTF8.GetString(Client.AllMessages[0].Message).Split(' ');
-                    Client.AllMessages.RemoveAt(0);
-                    switch (message[0])
-                    {
-                        case "map":
-                            Map.RedrawMap(message);
-                            break;
-                        case "updatemap":
-                            Map.UpdateMap(message);
-                            break;
-                        default:
-                            break;
-                    }
+                    case "setcommand":
+
+                        break;
+                    case "nexttick":
+                        Player.TickTreatment();
+                        break;
+                    case "map":
+                        Map.RedrawMap(message);
+                        break;
+                    case "updatemap":
+                        Map.UpdateMap(message);
+                        break;
+                    default:
+                        break;
                 }
-                Thread.Sleep(50);
             }
         }
 
@@ -304,6 +329,76 @@ namespace BadBattleCity
                     Console.SetCursorPosition(j, i);
                     Console.Write(c);
                 }
+        }
+    }
+
+    static class Player
+    {
+        static public int Command;
+        static public Game.Direction Direction = Game.Direction.left;
+        static public Map.Point Coords;
+        static public int ShotFrequency = 3;
+        static public int MoveFrequency = 5;
+
+        static public int IsReadyToShot = 0;
+        static public int IsReadyToMove = 0;
+
+        static public bool Moved = false;
+        static public bool Fired = false;
+
+        public static void TickTreatment()
+        {
+            if (IsReadyToShot > 0) IsReadyToShot--;
+            if (IsReadyToMove > 0) IsReadyToMove--;
+            Moved = false;
+            Fired = false;
+        }
+
+        public static void HandlingPlayerActions()
+        {
+            while (true)
+            {
+                ConsoleKeyInfo key = Console.ReadKey(true);
+                switch (key.Key)
+                {
+                    case ConsoleKey.UpArrow:
+                        TryToMove(Game.Direction.up);
+                        break;
+                    case ConsoleKey.DownArrow:
+                        TryToMove(Game.Direction.down);
+                        break;
+                    case ConsoleKey.LeftArrow:
+                        TryToMove(Game.Direction.left);
+                        break;
+                    case ConsoleKey.RightArrow:
+                        TryToMove(Game.Direction.right);
+                        break;
+                    case ConsoleKey.Spacebar:
+                        TryToShot();
+                        break;
+                }
+            }
+        }
+
+        private static void TryToShot()
+        {
+            if (IsReadyToShot == 0)
+            {
+                Fired = true;
+                IsReadyToShot = ShotFrequency;
+            }
+        }
+
+        private static void TryToMove(Game.Direction direction)
+        {
+            if (IsReadyToMove == 0)
+            {
+                if (Direction != direction)
+                    Direction = direction;
+                else
+                    Moved = true;
+                IsReadyToMove = MoveFrequency;
+            }
         }
     }
 }
