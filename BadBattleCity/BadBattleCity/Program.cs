@@ -56,15 +56,15 @@ namespace BadBattleCity
                 Server.Send("hi", Server.SenderDefaultEndPoint);
                 for (int i = 0; i < Server.AllMessages.Count;)
                 {
-                    string[] message = Encoding.UTF8.GetString(Client.AllMessages[0].Message).Split(' ');
+                    string[] message = Encoding.UTF8.GetString(Server.AllMessages[0].Message).Split(' ');
                     if (message[0] == "new")
                     {
                         Server.Send("+new", Server.AllMessages[0].Address);
                         Server.Clients.Add(Server.AllMessages[0].Address);
                         Console.WriteLine("К серверу добавлен новый клиент");
                     }
-                    Client.AllMessages.RemoveAt(0);
-                    if (Client.AllMessages.Count >= NumberOfPlayers)
+                    Server.AllMessages.RemoveAt(0);
+                    if (Client.Clients.Count >= NumberOfPlayers)
                         break;
                 }
                 Thread.Sleep(500);
@@ -117,6 +117,7 @@ namespace BadBattleCity
                         Client.Start();
                         Thread.Sleep(100);
                         Client.Send("new", Client.SenderDefaultEndPoint);
+                        Client.AllMessages.Clear();
                     }
                 }
                 Thread.Sleep(1000);
