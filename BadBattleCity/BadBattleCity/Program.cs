@@ -31,7 +31,7 @@ namespace BadBattleCity
                 if (offerCreateServerThread.IsAlive)
                     offerCreateServerThread.Abort();
             //Дальше подключаемся к серверу
-            Console.WriteLine("Типо подключился");
+            Console.WriteLine("Клиент ожидает начала игры");
         }
 
         private static void OfferCreateServer()
@@ -69,6 +69,7 @@ namespace BadBattleCity
                 }
                 Thread.Sleep(500);
             }
+            Console.WriteLine("Сервер запустил игру");
             StartGame();
         }
 
