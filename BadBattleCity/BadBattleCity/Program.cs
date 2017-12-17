@@ -31,6 +31,7 @@ namespace BadBattleCity
         public const int ServerPort = 15000;
         public const int ClientPort = 14000;
         public const int NumberOfTeams = 2;
+        public const int GameSpeed = 250;
 
         static bool IsServerRunning = false;
         static bool GameStarted = false;
@@ -38,6 +39,8 @@ namespace BadBattleCity
 
         static Connector Client = new Connector(new IPEndPoint(IPAddress.Broadcast, ServerPort), ClientPort);
         static Connector Server;
+        //Это надо куда-то переместить
+        static public List<Map.Point> Spawners = new List<Map.Point>();
 
         static void Main()
         {
@@ -101,6 +104,56 @@ namespace BadBattleCity
             SendMessageToAllClients("map" + " " + GetStringMap());
             for (int i = 0; i < Server.Clients.Count; i++)
                 Server.Send("command" + " " + i % NumberOfTeams, Server.Clients[i]);
+            FindSpawners();
+            ServerGamingCycle();
+        }
+
+        private static void ServerGamingCycle()
+        {
+            DateTime time = DateTime.Now;
+            while (GameStarted)
+            {
+                CreatePlayers();
+                ExecuteClientsCommands();
+                MoveObjects();
+                UpdateClientsData();
+
+                Thread.Sleep(Math.Max(GameSpeed - DateTime.Now.Millisecond - time.Millisecond, 0));
+                time = DateTime.Now;
+            }
+        }
+
+        private static void CreatePlayers()
+        {
+            throw new NotImplementedException();
+        }
+
+        private static void UpdateClientsData()
+        {
+            throw new NotImplementedException();
+        }
+
+        private static void MoveObjects()
+        {
+            throw new NotImplementedException();
+        }
+
+        private static void ExecuteClientsCommands()
+        {
+            throw new NotImplementedException();
+        }
+
+        private static void FindSpawners()
+        {
+            char[] spawnersChars = { 'z', 'x', 'c', 'v' };
+            for (int i = 0; i < Map.MapWidth; i++)
+            {
+                for (int j = 0; j < Map.MapWidth; j++)
+                {
+                    if (Array.IndexOf(spawnersChars, Map.Field[i, j]) >= 0)
+                        Spawners.Add(new Map.Point(j, i));
+                }
+            }
         }
 
         private static void StartClientGame()
@@ -126,7 +179,7 @@ namespace BadBattleCity
                 switch (message[0])
                 {
                     case "setcommand":
-
+                        Player.Command = int.Parse(message[1]);
                         break;
                     case "nexttick":
                         Player.TickTreatment();
@@ -220,6 +273,7 @@ namespace BadBattleCity
             bullet = '8',
             boom = '9'
         }
+
         public struct Point
         {
             public int X, Y;
