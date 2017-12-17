@@ -65,7 +65,7 @@ namespace BadBattleCity
                     }
                     Server.AllMessages.RemoveAt(0);
                     if (Client.Clients.Count >= NumberOfPlayers)
-                        break;
+                        GameStarted = true;
                 }
                 Thread.Sleep(500);
             }
