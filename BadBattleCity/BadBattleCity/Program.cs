@@ -53,21 +53,51 @@ namespace BadBattleCity
 
             while (!GameStarted)
             {
+                Server.Send("hi", Server.SenderDefaultEndPoint);
                 for (int i = 0; i < Server.AllMessages.Count;)
                 {
                     string[] message = Encoding.UTF8.GetString(Client.AllMessages[0].Message).Split(' ');
                     if (message[0] == "new")
                     {
                         Server.Send("+new", Server.AllMessages[0].Address);
+                        Server.Clients.Add(Server.AllMessages[0].Address);
                         Console.WriteLine("К серверу добавлен новый клиент");
                     }
                     Client.AllMessages.RemoveAt(0);
+                    if (Client.AllMessages.Count >= NumberOfPlayers)
+                        break;
                 }
                 Thread.Sleep(500);
             }
+            StartGame();
         }
 
-        private static void BeginSearchServer()
+        private static void StartGame()
+        {
+            string map = GetStringMap();
+            SendMessageToAllClients("map" + " " + map);
+        }
+
+        private static void SendMessageToAllClients(string message)
+        {
+            for (int i = 0; i < Server.Clients.Count; i++)
+            {
+                Server.Send(message, Server.Clients[i]);
+            }
+        }
+
+        private static string GetStringMap()
+        {
+            StringBuilder MapString = new StringBuilder();
+            for (int i = 0; i < Map.MapWidth; i++)
+                for (int j = 0; j < Map.MapWidth; j++)
+                {
+                    MapString.Append(Map.Field[i, j]);
+                }
+            return MapString.ToString();
+        }
+
+    private static void BeginSearchServer()
         {
             bool StopSearchingServer = false;
 
@@ -105,6 +135,26 @@ namespace BadBattleCity
             Client = new Connector(new IPEndPoint(IPAddress.Broadcast, ServerPort), ClientPort);
             return false;
         }
+    }
+
+    static class Map
+    {
+        public static Cells[,] Field;
+        public enum Cells
+        {
+            empty = '0',
+            flag = '1',
+            spawner = '2',
+            booster = '3',
+            water = '4',
+            brick = '5',
+            wall = '6',
+            tank = '7',
+            bullet = '8',
+            boom = '9'
+        }
+        public static int LineWidth = 1;
+        public static int MapWidth;
     }
 }
 

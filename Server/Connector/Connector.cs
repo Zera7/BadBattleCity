@@ -36,6 +36,7 @@ public class Connector
     public void Stop()
     {
         receiverThread.Abort();
+        UdpClient.Close();
     }
 
     private void Receive()
