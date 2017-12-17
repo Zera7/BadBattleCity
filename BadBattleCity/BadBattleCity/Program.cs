@@ -51,7 +51,7 @@ namespace BadBattleCity
             Server = new Connector(new IPEndPoint(IPAddress.Broadcast, ClientPort), ServerPort);
             Server.Start();
 
-            while (!GameStarted)
+            while (GameStarted == false)
             {
                 Server.Send("hi", Server.SenderDefaultEndPoint);
                 for (int i = 0; i < Server.AllMessages.Count;)
@@ -64,7 +64,7 @@ namespace BadBattleCity
                         Console.WriteLine("К серверу добавлен новый клиент");
                     }
                     Server.AllMessages.RemoveAt(0);
-                    if (Client.Clients.Count >= NumberOfPlayers)
+                    if (Server.Clients.Count >= NumberOfPlayers)
                         GameStarted = true;
                 }
                 Thread.Sleep(500);
@@ -134,6 +134,7 @@ namespace BadBattleCity
                 if (message[0] == "+new")
                     return true;
             }
+            Client.Stop();
             Client = new Connector(new IPEndPoint(IPAddress.Broadcast, ServerPort), ClientPort);
             return false;
         }
