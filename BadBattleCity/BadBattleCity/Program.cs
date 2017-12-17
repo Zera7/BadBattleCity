@@ -12,6 +12,11 @@ namespace BadBattleCity
 {
     static class Game
     {
+        enum ServerCommands
+        {
+
+        }
+
         public const int ServerPort = 15000;
         public const int ClientPort = 14000;
 
@@ -31,6 +36,7 @@ namespace BadBattleCity
                 if (offerCreateServerThread.IsAlive)
                     offerCreateServerThread.Abort();
             //Дальше подключаемся к серверу
+            Thread.Sleep(100);
             Console.WriteLine("Клиент ожидает начала игры");
         }
 
@@ -65,7 +71,11 @@ namespace BadBattleCity
                     }
                     Server.AllMessages.RemoveAt(0);
                     if (Server.Clients.Count >= NumberOfPlayers)
+                    {
                         GameStarted = true;
+                        Server.AllMessages.Clear();
+                        break;
+                    }
                 }
                 Thread.Sleep(500);
             }
