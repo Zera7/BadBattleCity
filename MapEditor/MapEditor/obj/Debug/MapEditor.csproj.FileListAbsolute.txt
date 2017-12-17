@@ -1,0 +1,10 @@
+E:\Proger\Skvortsov_Alexander_11_708\2017\fall\ps\3\MapEditor\MapEditor\bin\Debug\MapEditor.exe.config
+E:\Proger\Skvortsov_Alexander_11_708\2017\fall\ps\3\MapEditor\MapEditor\bin\Debug\MapEditor.exe
+E:\Proger\Skvortsov_Alexander_11_708\2017\fall\ps\3\MapEditor\MapEditor\bin\Debug\MapEditor.pdb
+E:\Proger\Skvortsov_Alexander_11_708\2017\fall\ps\3\MapEditor\MapEditor\obj\Debug\MapEditor.csprojResolveAssemblyReference.cache
+E:\Proger\Skvortsov_Alexander_11_708\2017\fall\ps\3\MapEditor\MapEditor\obj\Debug\MapEditor.Form1.resources
+E:\Proger\Skvortsov_Alexander_11_708\2017\fall\ps\3\MapEditor\MapEditor\obj\Debug\MapEditor.Properties.Resources.resources
+E:\Proger\Skvortsov_Alexander_11_708\2017\fall\ps\3\MapEditor\MapEditor\obj\Debug\MapEditor.csproj.GenerateResource.Cache
+E:\Proger\Skvortsov_Alexander_11_708\2017\fall\ps\3\MapEditor\MapEditor\obj\Debug\MapEditor.csproj.CoreCompileInputs.cache
+E:\Proger\Skvortsov_Alexander_11_708\2017\fall\ps\3\MapEditor\MapEditor\obj\Debug\MapEditor.exe
+E:\Proger\Skvortsov_Alexander_11_708\2017\fall\ps\3\MapEditor\MapEditor\obj\Debug\MapEditor.pdb

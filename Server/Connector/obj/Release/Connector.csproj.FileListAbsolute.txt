@@ -1,0 +1,6 @@
+E:\Proger\Skvortsov_Alexander_11_708\2017\fall\ps\3\Server\Connector\bin\Release\Connector.dll
+E:\Proger\Skvortsov_Alexander_11_708\2017\fall\ps\3\Server\Connector\bin\Release\Connector.pdb
+E:\Proger\Skvortsov_Alexander_11_708\2017\fall\ps\3\Server\Connector\obj\Release\Connector.csproj.CoreCompileInputs.cache
+E:\Proger\Skvortsov_Alexander_11_708\2017\fall\ps\3\Server\Connector\obj\Release\Connector.dll
+E:\Proger\Skvortsov_Alexander_11_708\2017\fall\ps\3\Server\Connector\obj\Release\Connector.pdb
+E:\Proger\Skvortsov_Alexander_11_708\2017\fall\ps\3\Server\Connector\obj\Release\Connector.csprojResolveAssemblyReference.cache
