@@ -12,10 +12,13 @@ namespace BadBattleCity
 {
     static class Game
     {
-        enum ServerCommands
-        {
-
-        }
+        //public enum ServerCommands
+        //{
+        //    InvitationToServer,
+        //    ConnectionRequest,
+        //    ConnectionAgreement,
+        //    SendingField
+        //}
 
         public const int ServerPort = 15000;
         public const int ClientPort = 14000;
@@ -35,9 +38,8 @@ namespace BadBattleCity
             if (!IsServerRunning)
                 if (offerCreateServerThread.IsAlive)
                     offerCreateServerThread.Abort();
-            //Дальше подключаемся к серверу
-            Thread.Sleep(100);
-            Console.WriteLine("Клиент ожидает начала игры");
+
+            StartClientGame();
         }
 
         private static void OfferCreateServer()
@@ -80,13 +82,40 @@ namespace BadBattleCity
                 Thread.Sleep(500);
             }
             Console.WriteLine("Сервер запустил игру");
-            StartGame();
+            StartServerGame();
         }
 
-        private static void StartGame()
+        private static void StartServerGame()
         {
-            string map = GetStringMap();
-            SendMessageToAllClients("map" + " " + map);
+            Map.DownloadMap();
+            SendMessageToAllClients("map" + " " + GetStringMap());
+        }
+
+        private static void StartClientGame()
+        {
+            //Дальше подключаемся к серверу
+            //Тут должна быть обработка команд полученных от сервера
+            Console.WriteLine("Клиент ожидает начала игры");
+            while (true)
+            {
+                for (int i = 0; i < Client.AllMessages.Count;)
+                {
+                    string[] message = Encoding.UTF8.GetString(Client.AllMessages[0].Message).Split(' ');
+                    Client.AllMessages.RemoveAt(0);
+                    switch (message[0])
+                    {
+                        case "map":
+                            Map.RedrawMap(message);
+                            break;
+                        case "updatemap":
+                            Map.UpdateMap(message);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                Thread.Sleep(50);
+            }
         }
 
         private static void SendMessageToAllClients(string message)
@@ -103,12 +132,12 @@ namespace BadBattleCity
             for (int i = 0; i < Map.MapWidth; i++)
                 for (int j = 0; j < Map.MapWidth; j++)
                 {
-                    MapString.Append(Map.Field[i, j]);
+                    MapString.Append((char)Map.Field[i, j]);
                 }
             return MapString.ToString();
         }
 
-    private static void BeginSearchServer()
+        private static void BeginSearchServer()
         {
             bool StopSearchingServer = false;
 
@@ -145,7 +174,6 @@ namespace BadBattleCity
                     return true;
             }
             Client.Stop();
-            Client.AllMessages.Clear();
             Client = new Connector(new IPEndPoint(IPAddress.Broadcast, ServerPort), ClientPort);
             return false;
         }
@@ -167,10 +195,111 @@ namespace BadBattleCity
             bullet = '8',
             boom = '9'
         }
+        public struct Point
+        {
+            public int X, Y;
+            public Point(int x, int y)
+            {
+                X = x;
+                Y = y;
+            }
+        }
         public static int LineWidth = 1;
         public static int MapWidth;
+
+        internal static void UpdateMap(string[] message)
+        {
+
+        }
+
+        public static void DownloadMap()
+        {
+            string fileName = "";
+            Console.WriteLine("Enter the name of the map");
+
+            do
+            {
+                fileName = Console.ReadLine();
+                if (File.Exists(fileName))
+                    break;
+                else
+                    Console.WriteLine("Error. There is no map");
+            } while (true);
+                try
+            {
+                Console.Clear();
+                string[] textMap = File.ReadAllLines(fileName);
+                MapWidth = textMap[0].Length;
+                Field = new Cells[MapWidth, MapWidth];
+
+                for (int i = 0; i < MapWidth; i++)
+                    for (int j = 0; j < MapWidth; j++)
+                    {
+                        Field[i, j] = (Cells)textMap[i][j];
+                    }
+            }
+            catch (Exception error)
+            {
+                Console.WriteLine("Map read error: \n{0}", error);
+            }
+        }
+
+        public static void RedrawMap(string[] message)
+        {
+            MapWidth = (int)Math.Sqrt(message[1].Length);
+
+            for (int i = 0; i < MapWidth; i++)
+            {
+                for (int j = 0; j < MapWidth; j++)
+                {
+                    Console.ForegroundColor = GetColor((Cells)message[1][MapWidth * i + j]);
+                    for (int k = 0; k < 2 * LineWidth; k++)
+                        Console.Write('█');
+                }
+                Console.WriteLine();
+            }
+        }
+
+        public static ConsoleColor GetColor(Cells cell)
+        {
+            switch (cell)
+            {
+                case Cells.empty:
+                    return ConsoleColor.Black;
+                case Cells.flag:
+                    return ConsoleColor.Magenta;
+                case Cells.spawner:
+                    return ConsoleColor.White;
+                case Cells.booster:
+                    return ConsoleColor.Yellow;
+                case Cells.water:
+                    return ConsoleColor.Blue;
+                case Cells.brick:
+                    return ConsoleColor.DarkRed;
+                case Cells.wall:
+                    return ConsoleColor.Gray;
+                case Cells.bullet:
+                    return ConsoleColor.DarkRed;
+                default:
+                    return ConsoleColor.Red;
+            }
+        }
+
+        internal static void DrawCell(Point coords, ConsoleColor color, char c = '█')
+        {
+            Console.ForegroundColor = color;
+            int maxY = coords.Y * LineWidth + LineWidth;
+            int maxX = coords.X * LineWidth * 2 + LineWidth * 2;
+            for (int i = coords.Y * LineWidth; i < maxY; i++)
+                for (int j = coords.X * LineWidth * 2; j < maxX; j++)
+                {
+                    Console.SetCursorPosition(j, i);
+                    Console.Write(c);
+                }
+        }
     }
 }
+
 
 //String host = ;
 // Получение ip-адреса.
