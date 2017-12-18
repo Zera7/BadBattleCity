@@ -102,10 +102,10 @@ namespace BadBattleCity
         {
             Map.DownloadMap();
             SendMessageToAllClients("map" + " " + GetStringMap());
-            for (int i = 0; i < Server.Clients.Count; i++)
-                Server.Send("command" + " " + i % NumberOfTeams, Server.Clients[i]);
-            FindSpawners();
-            ServerGamingCycle();
+            //for (int i = 0; i < Server.Clients.Count; i++)
+            //    Server.Send("command" + " " + i % NumberOfTeams, Server.Clients[i]);
+            //FindSpawners();
+            //ServerGamingCycle();
         }
 
         private static void ServerGamingCycle()
@@ -160,12 +160,10 @@ namespace BadBattleCity
         {
             //Дальше подключаемся к серверу
             //Тут должна быть обработка команд полученных от сервера
-            Console.WriteLine("Клиент ожидает начала игры");
             Thread HandlingPlayerActionsThread = new Thread(Player.HandlingPlayerActions);
             HandlingPlayerActionsThread.Start();
             while (true)
             {
-                Player.HandlingPlayerActions();
                 CommandProcessing();
             }
         }
@@ -176,6 +174,7 @@ namespace BadBattleCity
             {
                 string[] message = Encoding.UTF8.GetString(Client.AllMessages[0].Message).Split(' ');
                 Client.AllMessages.RemoveAt(0);
+
                 switch (message[0])
                 {
                     case "setcommand":
@@ -198,6 +197,7 @@ namespace BadBattleCity
 
         private static void SendMessageToAllClients(string message)
         {
+
             for (int i = 0; i < Server.Clients.Count; i++)
             {
                 Server.Send(message, Server.Clients[i]);
@@ -234,8 +234,8 @@ namespace BadBattleCity
                         Client = new Connector(Client.LastReseivePoint, ClientPort);
                         Client.Start();
                         Thread.Sleep(100);
-                        Client.Send("new", Client.SenderDefaultEndPoint);
                         Client.AllMessages.Clear();
+                        Client.Send("new", Client.SenderDefaultEndPoint);
                     }
                 }
                 Thread.Sleep(1000);
@@ -244,12 +244,15 @@ namespace BadBattleCity
 
         private static bool CheckConnect()
         {
-            for (int i = 0; i < Client.AllMessages.Count;)
+            for (int i = 0; i < Client.AllMessages.Count; i++)
             {
-                string[] message = Encoding.UTF8.GetString(Client.AllMessages[0].Message).Split(' ');
-                Client.AllMessages.RemoveAt(0);
+                string[] message = Encoding.UTF8.GetString(Client.AllMessages[i].Message).Split(' ');
                 if (message[0] == "+new")
+                {
+                    Console.WriteLine("Подключение подтверждено, ожидание запросов сервера");
+                    Client.AllMessages.RemoveAt(i);
                     return true;
+                }
             }
             Client.Stop();
             Client = new Connector(new IPEndPoint(IPAddress.Broadcast, ServerPort), ClientPort);
@@ -314,7 +317,6 @@ namespace BadBattleCity
             } while (true);
                 try
             {
-                Console.Clear();
                 string[] textMap = File.ReadAllLines(fileName);
                 MapWidth = textMap[0].Length;
                 Field = new Cells[MapWidth, MapWidth];
@@ -333,6 +335,7 @@ namespace BadBattleCity
 
         public static void RedrawMap(string[] message)
         {
+            Console.Clear();
             MapWidth = (int)Math.Sqrt(message[1].Length);
 
             for (int i = 0; i < MapWidth; i++)
