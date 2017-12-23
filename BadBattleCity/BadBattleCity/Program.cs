@@ -47,10 +47,10 @@ namespace BadBattleCity
         {
             if (!Client.isConnectedToServer)
             {
-                InputNumberOfPlayers();
                 Thread creatingServer = new Thread(InputNumberOfPlayers);
+                creatingServer.Start();
                 while (!isLobbyExists) Thread.Sleep(1000);
-                if (Client.isConnectedToServer)
+                if (!Server.isRunning)
                     if (creatingServer.IsAlive)
                         creatingServer.Abort();
             }
