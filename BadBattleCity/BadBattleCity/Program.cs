@@ -12,13 +12,11 @@ namespace BadBattleCity
 {
     static class Game
     {
-        //public enum ServerCommands
-        //{
-        //    InvitationToServer,
-        //    ConnectionRequest,
-        //    ConnectionAgreement,
-        //    SendingField
-        //}
+        // Game constants
+        public const int ServerSearchTimeout = 3;
+        public const int NumberOfTeams = 2;
+        public const int GameSpeed = 250;
+        // /Game constants
 
         public enum Direction
         {
@@ -27,436 +25,64 @@ namespace BadBattleCity
             up,
             down
         }
-
-        public const int ServerPort = 15000;
-        public const int ClientPort = 14000;
-        public const int NumberOfTeams = 2;
-        public const int GameSpeed = 250;
-
-        static bool IsServerRunning = false;
-        static bool GameStarted = false;
-        static int NumberOfPlayers;
-
-        static Connector Client = new Connector(new IPEndPoint(IPAddress.Broadcast, ServerPort), ClientPort);
-        static Connector Server;
-        //Это надо куда-то переместить
-        static public List<Map.Point> Spawners = new List<Map.Point>();
+        static public bool isReadyToStart = false;
+        static public bool isStarted = false;
+        static public bool isLobbyExists = false;
 
         static void Main()
         {
-            Thread offerCreateServerThread = new Thread(OfferCreateServer);
-            offerCreateServerThread.Start();
-            BeginSearchServer();
-            if (!IsServerRunning)
-                if (offerCreateServerThread.IsAlive)
-                    offerCreateServerThread.Abort();
+            Client.StartAsyncServerSearch();
+            for (int i = 0; i < 3 && !Client.isConnectedToServer; i++) Thread.Sleep(1000);
+            SuggestCreatingServer();
 
-            Console.CursorVisible = false;
-            StartClientGame();
+            while (Server.isRunning && !Game.isReadyToStart) Thread.Sleep(1000);
+            Console.WriteLine("Загрузка карты");
+
+            Client.StartGame();
         }
 
-        private static void OfferCreateServer()
+        #region Start Server / Connect To Server
+
+        private static void SuggestCreatingServer()
         {
-            do
+            if (!Client.isConnectedToServer)
             {
-                Console.Clear();
-                Console.WriteLine("Enter the number of players to create the server");
-            } while (!int.TryParse(Console.ReadLine(), out NumberOfPlayers));
-            Console.WriteLine("Server start");
-            IsServerRunning = true;
-            StartServer();
+                InputNumberOfPlayers();
+                Thread creatingServer = new Thread(InputNumberOfPlayers);
+                while (!isLobbyExists) Thread.Sleep(1000);
+                if (Client.isConnectedToServer)
+                    if (creatingServer.IsAlive)
+                        creatingServer.Abort();
+            }
         }
 
-        private static void StartServer()
+        private static void InputNumberOfPlayers()
         {
-            Server = new Connector(new IPEndPoint(IPAddress.Broadcast, ClientPort), ServerPort);
+            Console.WriteLine("Сервер не найден. Введите число игроков для создания сервера если не хотите ждать");
+            while (!int.TryParse(Console.ReadLine(), out Server.numberOfPlayers)) ;
+            if (!isLobbyExists && Server.numberOfPlayers > 0)
+                ServerStart();
+            else
+                Console.WriteLine("Сервер не был создан");
+        }
+
+        private static void ServerStart()
+        {
+            Console.WriteLine("Сервер запущен");
+            Server.isRunning = true;
+            isLobbyExists = true;
+            Client.isConnectedToServer = true;
+            if (Client.ServerSearch.IsAlive)
+                Client.ServerSearch.Abort();
+            Client.connector.Stop();
+            Client.connector = new Connector(new IPEndPoint(IPAddress.Loopback, Server.Port), Client.Port);
+            Server.connector.Clients.Add(new IPEndPoint(IPAddress.Loopback, Client.Port));
             Server.Start();
-
-            while (GameStarted == false)
-            {
-                Server.Send("hi", Server.SenderDefaultEndPoint);
-                for (int i = 0; i < Server.AllMessages.Count;)
-                {
-                    string[] message = Encoding.UTF8.GetString(Server.AllMessages[0].Message).Split(' ');
-                    if (message[0] == "new")
-                    {
-                        Server.Send("+new", Server.AllMessages[0].Address);
-                        Server.Clients.Add(Server.AllMessages[0].Address);
-                        Console.WriteLine("К серверу добавлен новый клиент");
-                    }
-                    Server.AllMessages.RemoveAt(0);
-                    if (Server.Clients.Count >= NumberOfPlayers)
-                    {
-                        GameStarted = true;
-                        Server.AllMessages.Clear();
-                        break;
-                    }
-                }
-                Thread.Sleep(500);
-            }
-            Console.WriteLine("Сервер запустил игру");
-            StartServerGame();
         }
 
-        private static void StartServerGame()
-        {
-            Map.DownloadMap();
-            SendMessageToAllClients("map" + " " + GetStringMap());
-            //for (int i = 0; i < Server.Clients.Count; i++)
-            //    Server.Send("command" + " " + i % NumberOfTeams, Server.Clients[i]);
-            //FindSpawners();
-            //ServerGamingCycle();
-        }
+        #endregion
 
-        private static void ServerGamingCycle()
-        {
-            DateTime time = DateTime.Now;
-            while (GameStarted)
-            {
-                CreatePlayers();
-                ExecuteClientsCommands();
-                MoveObjects();
-                UpdateClientsData();
 
-                Thread.Sleep(Math.Max(GameSpeed - DateTime.Now.Millisecond - time.Millisecond, 0));
-                time = DateTime.Now;
-            }
-        }
-
-        private static void CreatePlayers()
-        {
-            throw new NotImplementedException();
-        }
-
-        private static void UpdateClientsData()
-        {
-            throw new NotImplementedException();
-        }
-
-        private static void MoveObjects()
-        {
-            throw new NotImplementedException();
-        }
-
-        private static void ExecuteClientsCommands()
-        {
-            throw new NotImplementedException();
-        }
-
-        private static void FindSpawners()
-        {
-            char[] spawnersChars = { 'z', 'x', 'c', 'v' };
-            for (int i = 0; i < Map.MapWidth; i++)
-            {
-                for (int j = 0; j < Map.MapWidth; j++)
-                {
-                    if (Array.IndexOf(spawnersChars, Map.Field[i, j]) >= 0)
-                        Spawners.Add(new Map.Point(j, i));
-                }
-            }
-        }
-
-        private static void StartClientGame()
-        {
-            //Дальше подключаемся к серверу
-            //Тут должна быть обработка команд полученных от сервера
-            Thread HandlingPlayerActionsThread = new Thread(Player.HandlingPlayerActions);
-            HandlingPlayerActionsThread.Start();
-            while (true)
-            {
-                CommandProcessing();
-            }
-        }
-
-        private static void CommandProcessing()
-        {
-            for (int i = 0; i < Client.AllMessages.Count;)
-            {
-                string[] message = Encoding.UTF8.GetString(Client.AllMessages[0].Message).Split(' ');
-                Client.AllMessages.RemoveAt(0);
-
-                switch (message[0])
-                {
-                    case "setcommand":
-                        Player.Command = int.Parse(message[1]);
-                        break;
-                    case "nexttick":
-                        Player.TickTreatment();
-                        break;
-                    case "map":
-                        Map.RedrawMap(message);
-                        break;
-                    case "updatemap":
-                        Map.UpdateMap(message);
-                        break;
-                    default:
-                        break;
-                }
-            }
-        }
-
-        private static void SendMessageToAllClients(string message)
-        {
-
-            for (int i = 0; i < Server.Clients.Count; i++)
-            {
-                Server.Send(message, Server.Clients[i]);
-            }
-        }
-
-        private static string GetStringMap()
-        {
-            StringBuilder MapString = new StringBuilder();
-            for (int i = 0; i < Map.MapWidth; i++)
-                for (int j = 0; j < Map.MapWidth; j++)
-                {
-                    MapString.Append((char)Map.Field[i, j]);
-                }
-            return MapString.ToString();
-        }
-
-        private static void BeginSearchServer()
-        {
-            bool StopSearchingServer = false;
-
-            Client.Start();
-            while (!StopSearchingServer || !CheckConnect())
-            {
-                StopSearchingServer = false;
-                for (int i = 0; i < Client.AllMessages.Count;)
-                {
-                    string[] message = Encoding.UTF8.GetString(Client.AllMessages[0].Message).Split(' ');
-                    Client.AllMessages.RemoveAt(0);
-                    if (message[0] == "hi")
-                    {
-                        StopSearchingServer = true;
-                        Client.Stop();
-                        Client = new Connector(Client.LastReseivePoint, ClientPort);
-                        Client.Start();
-                        Thread.Sleep(100);
-                        Client.AllMessages.Clear();
-                        Client.Send("new", Client.SenderDefaultEndPoint);
-                    }
-                }
-                Thread.Sleep(1000);
-            }
-        }
-
-        private static bool CheckConnect()
-        {
-            for (int i = 0; i < Client.AllMessages.Count; i++)
-            {
-                string[] message = Encoding.UTF8.GetString(Client.AllMessages[i].Message).Split(' ');
-                if (message[0] == "+new")
-                {
-                    Console.WriteLine("Подключение подтверждено, ожидание запросов сервера");
-                    Client.AllMessages.RemoveAt(i);
-                    return true;
-                }
-            }
-            Client.Stop();
-            Client = new Connector(new IPEndPoint(IPAddress.Broadcast, ServerPort), ClientPort);
-            return false;
-        }
-    }
-
-    static class Map
-    {
-        public static Cells[,] Field;
-        public enum Cells
-        {
-            empty = '0',
-            flag = '1',
-            spawner = '2',
-            booster = '3',
-            water = '4',
-            brick = '5',
-            wall = '6',
-            tank = '7',
-            bullet = '8',
-            boom = '9'
-        }
-
-        public struct Point
-        {
-            public int X, Y;
-            public Point(int x, int y)
-            {
-                X = x;
-                Y = y;
-            }
-        }
-        public static int LineWidth = 1;
-        public static int MapWidth;
-
-        internal static void UpdateMap(string[] message)
-        {
-            for (int i = 1; i < message.Length / 3;)
-            {
-                Point point = new Point(int.Parse(message[i++]), int.Parse(message[i++]));
-                char type = message[i++][0];
-                if (type < 10)
-                    DrawCell(point, GetColor((Cells)type));
-                else
-                    DrawCell(point, GetColor((Cells)type), type);
-            }
-        }
-
-        public static void DownloadMap()
-        {
-            string fileName = "";
-            Console.WriteLine("Enter the name of the map");
-
-            do
-            {
-                fileName = Console.ReadLine();
-                if (File.Exists(fileName))
-                    break;
-                else
-                    Console.WriteLine("Error. There is no map");
-            } while (true);
-                try
-            {
-                string[] textMap = File.ReadAllLines(fileName);
-                MapWidth = textMap[0].Length;
-                Field = new Cells[MapWidth, MapWidth];
-
-                for (int i = 0; i < MapWidth; i++)
-                    for (int j = 0; j < MapWidth; j++)
-                    {
-                        Field[i, j] = (Cells)textMap[i][j];
-                    }
-            }
-            catch (Exception error)
-            {
-                Console.WriteLine("Map read error: \n{0}", error);
-            }
-        }
-
-        public static void RedrawMap(string[] message)
-        {
-            Console.Clear();
-            MapWidth = (int)Math.Sqrt(message[1].Length);
-
-            for (int i = 0; i < MapWidth; i++)
-            {
-                for (int j = 0; j < MapWidth; j++)
-                {
-                    Console.ForegroundColor = GetColor((Cells)message[1][MapWidth * i + j]);
-                    for (int k = 0; k < 2 * LineWidth; k++)
-                        Console.Write('█');
-                }
-                Console.WriteLine();
-            }
-        }
-
-        public static ConsoleColor GetColor(Cells cell)
-        {
-            switch (cell)
-            {
-                case Cells.empty:
-                    return ConsoleColor.Black;
-                case Cells.flag:
-                    return ConsoleColor.Magenta;
-                case Cells.spawner:
-                    return ConsoleColor.White;
-                case Cells.booster:
-                    return ConsoleColor.Yellow;
-                case Cells.water:
-                    return ConsoleColor.Blue;
-                case Cells.brick:
-                    return ConsoleColor.DarkRed;
-                case Cells.wall:
-                    return ConsoleColor.Gray;
-                case Cells.bullet:
-                    return ConsoleColor.DarkRed;
-                default:
-                    return ConsoleColor.Red;
-            }
-        }
-
-        internal static void DrawCell(Point coords, ConsoleColor color, char c = '█')
-        {
-            Console.ForegroundColor = color;
-            int maxY = coords.Y * LineWidth + LineWidth;
-            int maxX = coords.X * LineWidth * 2 + LineWidth * 2;
-            for (int i = coords.Y * LineWidth; i < maxY; i++)
-                for (int j = coords.X * LineWidth * 2; j < maxX; j++)
-                {
-                    Console.SetCursorPosition(j, i);
-                    Console.Write(c);
-                }
-        }
-    }
-
-    static class Player
-    {
-        static public int Command;
-        static public Game.Direction Direction = Game.Direction.left;
-        static public Map.Point Coords;
-        static public int ShotFrequency = 3;
-        static public int MoveFrequency = 5;
-
-        static public int IsReadyToShot = 0;
-        static public int IsReadyToMove = 0;
-
-        static public bool Moved = false;
-        static public bool Fired = false;
-
-        public static void TickTreatment()
-        {
-            if (IsReadyToShot > 0) IsReadyToShot--;
-            if (IsReadyToMove > 0) IsReadyToMove--;
-            Moved = false;
-            Fired = false;
-        }
-
-        public static void HandlingPlayerActions()
-        {
-            while (true)
-            {
-                ConsoleKeyInfo key = Console.ReadKey(true);
-                switch (key.Key)
-                {
-                    case ConsoleKey.UpArrow:
-                        TryToMove(Game.Direction.up);
-                        break;
-                    case ConsoleKey.DownArrow:
-                        TryToMove(Game.Direction.down);
-                        break;
-                    case ConsoleKey.LeftArrow:
-                        TryToMove(Game.Direction.left);
-                        break;
-                    case ConsoleKey.RightArrow:
-                        TryToMove(Game.Direction.right);
-                        break;
-                    case ConsoleKey.Spacebar:
-                        TryToShot();
-                        break;
-                }
-            }
-        }
-
-        private static void TryToShot()
-        {
-            if (IsReadyToShot == 0)
-            {
-                Fired = true;
-                IsReadyToShot = ShotFrequency;
-            }
-        }
-
-        private static void TryToMove(Game.Direction direction)
-        {
-            if (IsReadyToMove == 0)
-            {
-                if (Direction != direction)
-                    Direction = direction;
-                else
-                    Moved = true;
-                IsReadyToMove = MoveFrequency;
-            }
-        }
     }
 }
 

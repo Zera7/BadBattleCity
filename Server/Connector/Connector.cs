@@ -35,7 +35,8 @@ public class Connector
 
     public void Stop()
     {
-        receiverThread.Abort();
+        if (receiverThread != null && receiverThread.IsAlive)
+            receiverThread.Abort();
         UdpClient.Close();
     }
 
@@ -62,5 +63,16 @@ public class Connector
         catch (Exception)
         {
         }
+    }
+
+    public Messages SyncReceive()
+    {
+        byte[] bytes = UdpClient.Receive(ref LastReseivePoint);
+        AllMessages.Add(new Messages
+        {
+            Address = LastReseivePoint,
+            Message = bytes
+        });
+        return AllMessages[AllMessages.Count - 1];
     }
 }

@@ -1,7 +1,0 @@
-E:\Proger\Skvortsov_Alexander_11_708\2017\fall\ps\3\Server\Server\bin\Debug\Server.exe.config
-E:\Proger\Skvortsov_Alexander_11_708\2017\fall\ps\3\Server\Server\bin\Debug\Server.exe
-E:\Proger\Skvortsov_Alexander_11_708\2017\fall\ps\3\Server\Server\bin\Debug\Server.pdb
-E:\Proger\Skvortsov_Alexander_11_708\2017\fall\ps\3\Server\Server\obj\Debug\Server.csprojResolveAssemblyReference.cache
-E:\Proger\Skvortsov_Alexander_11_708\2017\fall\ps\3\Server\Server\obj\Debug\Server.csproj.CoreCompileInputs.cache
-E:\Proger\Skvortsov_Alexander_11_708\2017\fall\ps\3\Server\Server\obj\Debug\Server.exe
-E:\Proger\Skvortsov_Alexander_11_708\2017\fall\ps\3\Server\Server\obj\Debug\Server.pdb
