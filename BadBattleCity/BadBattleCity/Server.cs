@@ -22,7 +22,8 @@ namespace BadBattleCity
             "+new",     // Client connection agreement
             "map",      // Sending a map
             "tick",     // Command to start the next iteration
-            "init"      // Player creation
+            "init",     // Player creation
+            "upd"       // Update map
             };
         // /Server commands
         public static bool isRunning = false;
@@ -30,8 +31,11 @@ namespace BadBattleCity
         public static Connector connector = new Connector(new IPEndPoint(IPAddress.Broadcast, Client.Port), Port);
 
         public static Dictionary<IPEndPoint, Player> players = new Dictionary<IPEndPoint, Player>();
+        public static List<Bullet>[] bullets = new List<Bullet>[Game.NumberOfTeams];
+
         public static List<Map.Point> spawners = new List<Map.Point>();
         public static List<Player>[] playersReadyToRespawn = new List<Player>[Game.NumberOfTeams];
+        static StringBuilder mapUpdate = new StringBuilder();
 
         public static void Start()
         {
@@ -46,16 +50,7 @@ namespace BadBattleCity
             StartGameCycle();
         }
 
-        private static void InitPlayers()
-        {
-            for (int i = 0; i < connector.Clients.Count; i++)
-            {
-                connector.Send("init " + players[connector.Clients[i]].team + " " +
-                    players[connector.Clients[i]].coords.X + " " +
-                    players[connector.Clients[i]].coords.Y
-                    , connector.Clients[i]);
-            }
-        }
+        #region PrepareServerData
 
         private static void CreateListOfSpawners()
         {
@@ -78,6 +73,26 @@ namespace BadBattleCity
             }
         }
 
+        #endregion
+
+        #region ClientCommandProcessing
+
+        #endregion
+
+        private static void InitPlayers()
+        {
+            for (int i = 0; i < connector.Clients.Count; i++)
+            {
+                connector.Send("init " + players[connector.Clients[i]].team + " " +
+                    players[connector.Clients[i]].coords.X + " " +
+                    players[connector.Clients[i]].coords.Y
+                    , connector.Clients[i]);
+            }
+        }
+
+
+        
+
         private static void StartGameCycle()
         {
             Game.isStarted = true;
@@ -86,8 +101,11 @@ namespace BadBattleCity
             {
                 CreatePlayers();
                 ExecuteClientsCommands();
-                for (int i = 0; i < Game.NumberOfTeams; i++)
-                    UpdateClientsData(MoveObjects(i));
+                CheckAllBulletsForCollisions();
+                RemoveDeadBullets();
+
+                SendMessageToAllClients(mapUpdate.ToString());
+                mapUpdate.Clear();
 
 
 
@@ -100,27 +118,42 @@ namespace BadBattleCity
             }
         }
 
-        private static void UpdateClientsData(string message)
+        private static void CheckAllBulletsForCollisions()
         {
-            for (int i = 0; i < players.Count; i++)
+            for (int i = 0; i < bullets.Length; i++)
             {
-                
+                for (int j = 0; j < bullets[i].Count; j++)
+                {
+
+                }
+            }
+                //Дописать метод проверки столкновений для динамических объектов
+        }
+
+        private static void RemoveDeadBullets()
+        {
+            for (int i = 0; i < bullets.Length; i++)
+            {
+                for (int j = 0; j < bullets[i].Count; j++)
+                {
+                    if (!bullets[i][j].isAlive)
+                        bullets[i].RemoveAt(j--);
+                }
             }
         }
 
-        private static string MoveObjects(int team)
+        private static void MovePlayer(string[] message, Player player)
         {
-            StringBuilder message = new StringBuilder();
-            for (int i = 0; i < Map.MapWidth; i++)
-            {
-                for (int j = 0; j < Map.MapWidth; j++)
+            if (Map.Field[player.newCoords.Y, player.newCoords.X] == Map.Cells.empty)
+                if (Map.movableObjects[player.newCoords.Y, player.newCoords.X] == null ||
+                    Map.movableObjects[player.newCoords.Y, player.newCoords.X].GetType().Name == "Bullet")
                 {
-                    if (Map.movableObjects[i, j] != null && Map.movableObjects[i, j].team == team)
-                    {
+                    Map.movableObjects[player.coords.Y, player.coords.X] = null;
+                    Map.movableObjects[player.newCoords.Y, player.newCoords.X] = player;
 
-                    }
+                    player.coords.X = player.newCoords.X;
+                    player.coords.Y = player.newCoords.Y;
                 }
-            }
         }
 
         private static void ExecuteClientsCommands()
@@ -140,7 +173,25 @@ namespace BadBattleCity
                 case "res":
                     playersReadyToRespawn[player.team].Add(player);
                     break;
+                case "move":
+                    MovePlayer(message, player);
+                    break;
+                case "shot":
+                    AddBullet(player);
+                    break;
             }
+        }
+
+        private static void AddBullet(Player player)
+        {
+            int deltaX = 0;
+            int deltaY = 0;
+            if (player.direction == Game.Direction.left) deltaX = -1;
+            if (player.direction == Game.Direction.right) deltaX = 1;
+            if (player.direction == Game.Direction.up) deltaY = -1;
+            if (player.direction == Game.Direction.down) deltaY = 1;
+
+            if (Map.Field[player.coords.Y + deltaY, player.coords.X + deltaX] !=)
         }
 
         private static void CreatePlayers()
