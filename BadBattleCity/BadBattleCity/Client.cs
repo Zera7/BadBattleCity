@@ -19,7 +19,8 @@ namespace BadBattleCity
         // Client commands
         static public string[] commands = {
             "new",      // Request to connect to the server
-            "res"       // Respawn request
+            "res",      // Respawn request
+            "shot"
             };
         // /Client commands
 
@@ -93,42 +94,44 @@ namespace BadBattleCity
         {
             while (true)
             {
-                string[] message = Encoding.UTF8.GetString(connector.SyncReceive().Message).Split(' ');
-                ProcessReceivedCommands(message);
+                ProcessReceivedCommands();
                 if (thisPlayer != null)
-                {
-                    if (thisPlayer.Move())
-                        connector.Send("move " +
-                            thisPlayer.newCoords.X + " " +
-                            thisPlayer.newCoords.Y + " " +
-                            thisPlayer.direction,
-                            connector.SenderDefaultEndPoint);
-                    if (thisPlayer.Fire())
-                        connector.Send("shot ",
-                            connector.SenderDefaultEndPoint);
-                    if (!thisPlayer.isAlive && thisPlayer.RemainingDeathPenalty == 0)
-                    {
-                        connector.Send("res ",
-                            connector.SenderDefaultEndPoint);
-                        thisPlayer.RemainingDeathPenalty = -1;
-                    }
-                }
-                
+                    SendCommandsToServer();
+
             }
         }
 
-        private static void InitThisPlayer()
+        private static void SendCommandsToServer()
         {
-            string[] message = Encoding.UTF8.GetString(connector.SyncReceive().Message).Split(' ');
+            if (thisPlayer.Move())
+                connector.Send("move " +
+                    thisPlayer.newCoords.X + " " +
+                    thisPlayer.newCoords.Y + " " +
+                    thisPlayer.direction,
+                    connector.SenderDefaultEndPoint);
+            if (thisPlayer.Fire())
+                connector.Send("shot ",
+                    connector.SenderDefaultEndPoint);
+            if (!thisPlayer.isAlive && thisPlayer.RemainingDeathPenalty == 0)
+            {
+                connector.Send("res ",
+                    connector.SenderDefaultEndPoint);
+                thisPlayer.RemainingDeathPenalty = -1;
+            }
+        }
+
+        private static void InitThisPlayer(string[] message)
+        {
             if (message[0] == "init")
             {
                 thisPlayer = new Player(int.Parse(message[1]), new Map.Point(int.Parse(message[2]), int.Parse(message[3])));
             }
-            connector.AllMessages.RemoveAt(0);
         }
 
-        internal static void ProcessReceivedCommands(string[] message)
+        internal static void ProcessReceivedCommands()
         {
+            string[] message = Encoding.UTF8.GetString(connector.SyncReceive().Message).Split(' ');
+
             switch (message[0])
             {
                 case "map":
@@ -138,10 +141,22 @@ namespace BadBattleCity
                     thisPlayer.TickTreatment();
                     break;
                 case "init":
-                    InitThisPlayer();
+                    InitThisPlayer(message);
+                    break;
+                case "upd":
+                    UpdateField(message);
+                    break;
+                case "updd":
                     break;
             }
+            Console.WriteLine(Encoding.UTF8.GetString(connector.AllMessages[connector.AllMessages.Count - 1].Message));
+
             connector.AllMessages.RemoveAt(0);
+        }
+
+        private static void UpdateField(string[] message)
+        {
+
         }
 
 

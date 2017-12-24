@@ -14,5 +14,23 @@ namespace BadBattleCity
         public Map.Point newCoords;
         public bool isAlive = false;
         public int MoveFrequency;
+
+        public char GetChar()
+        {
+            if (GetType().Name == "Player")
+                switch (direction)
+                {
+                    case Game.Direction.left:
+                        return '<';
+                    case Game.Direction.right:
+                        return '>';
+                    case Game.Direction.up:
+                        return '^';
+                    default:
+                        return 'v';
+                }
+            else
+                return '█';
+        }
     }
 }

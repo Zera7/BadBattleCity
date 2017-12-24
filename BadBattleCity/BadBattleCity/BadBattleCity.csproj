@@ -45,6 +45,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Bullet.cs" />
     <Compile Include="Client.cs" />
     <Compile Include="Map.cs" />
     <Compile Include="MovableObject.cs" />
