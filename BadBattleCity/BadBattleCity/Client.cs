@@ -149,8 +149,6 @@ namespace BadBattleCity
                 case "updd":
                     break;
             }
-            Console.WriteLine(Encoding.UTF8.GetString(connector.AllMessages[connector.AllMessages.Count - 1].Message));
-
             connector.AllMessages.RemoveAt(0);
         }
 

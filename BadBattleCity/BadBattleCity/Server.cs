@@ -200,8 +200,8 @@ namespace BadBattleCity
 
 
                 Thread.Sleep(
-                    Math.Max(Game.GameSpeed - (DateTime.Now.Millisecond + DateTime.Now.Second * 1000) -
-                    time.Millisecond - time.Second * 1000,
+                    Math.Max(Game.GameSpeed - (DateTime.Now.Millisecond + DateTime.Now.Second * 1000 -
+                    time.Millisecond - time.Second * 1000),
                     0));
                 time = DateTime.Now;
             }
