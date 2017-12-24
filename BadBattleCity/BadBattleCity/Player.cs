@@ -2,73 +2,96 @@
 
 namespace BadBattleCity
 {
-    static class Player
+    class Player : MovableObject
     {
-        static public int Command;
-        static public Game.Direction Direction = Game.Direction.left;
-        static public Map.Point Coords;
-        static public int ShotFrequency = 3;
-        static public int MoveFrequency = 5;
-
-        static public int IsReadyToShot = 0;
-        static public int IsReadyToMove = 0;
-
-        static public bool Moved = false;
-        static public bool Fired = false;
-
-        public static void TickTreatment()
+        public Player(int team, Map.Point coords)
         {
-            if (IsReadyToShot > 0) IsReadyToShot--;
+            this.team = team;
+            this.coords = coords;
+        }
+
+        public int deathPenalty = 0;
+        public int RemainingDeathPenalty = 0;
+
+        public int ShotFrequency = 3;
+
+
+        public int isReadyToShot = 0;
+        public int IsReadyToMove = 0;
+
+        public void TickTreatment()
+        {
+            if (isReadyToShot > 0) isReadyToShot--;
             if (IsReadyToMove > 0) IsReadyToMove--;
-            Moved = false;
-            Fired = false;
+            if (RemainingDeathPenalty > 0) RemainingDeathPenalty--;
         }
 
-        public static void HandlingPlayerActions()
-        {
-            while (true)
-            {
-                ConsoleKeyInfo key = Console.ReadKey(true);
-                switch (key.Key)
-                {
-                    case ConsoleKey.UpArrow:
-                        TryToMove(Game.Direction.up);
-                        break;
-                    case ConsoleKey.DownArrow:
-                        TryToMove(Game.Direction.down);
-                        break;
-                    case ConsoleKey.LeftArrow:
-                        TryToMove(Game.Direction.left);
-                        break;
-                    case ConsoleKey.RightArrow:
-                        TryToMove(Game.Direction.right);
-                        break;
-                    case ConsoleKey.Spacebar:
-                        TryToShot();
-                        break;
-                }
-            }
-        }
-
-        private static void TryToShot()
-        {
-            if (IsReadyToShot == 0)
-            {
-                Fired = true;
-                IsReadyToShot = ShotFrequency;
-            }
-        }
-
-        private static void TryToMove(Game.Direction direction)
+        public bool Move()
         {
             if (IsReadyToMove == 0)
-            {
-                if (Direction != direction)
-                    Direction = direction;
-                else
-                    Moved = true;
-                IsReadyToMove = MoveFrequency;
-            }
+                if (Console.KeyAvailable)
+                {
+                    ConsoleKeyInfo key = Console.ReadKey(true);
+                    switch (key.Key)
+                    {
+                        case ConsoleKey.UpArrow:
+                            if (direction == Game.Direction.up)
+                            {
+                                newCoords.X = coords.X;
+                                newCoords.Y = coords.Y - 1;
+                            }
+                            else
+                                direction = Game.Direction.up;
+                            IsReadyToMove = MoveFrequency;
+                            return true;
+                        case ConsoleKey.DownArrow:
+                            if (direction == Game.Direction.down)
+                            {
+                                newCoords.X = coords.X;
+                                newCoords.Y = coords.Y + 1;
+                            }
+                            else
+                                direction = Game.Direction.down;
+                            IsReadyToMove = MoveFrequency;
+                            return true;
+                        case ConsoleKey.LeftArrow:
+                            if (direction == Game.Direction.left)
+                            {
+                                newCoords.X = coords.X - 1;
+                                newCoords.Y = coords.Y;
+                            }
+                            else
+                                direction = Game.Direction.left;
+                            IsReadyToMove = MoveFrequency;
+                            return true;
+                        case ConsoleKey.RightArrow:
+                            if (direction == Game.Direction.right)
+                            {
+                                newCoords.X = coords.X + 1;
+                                newCoords.Y = coords.Y;
+                            }
+                            else
+                                direction = Game.Direction.right;
+                            IsReadyToMove = MoveFrequency;
+                            return true;
+                    }
+                }
+            return false;
+        }
+
+        public bool Fire()
+        {
+            if (isReadyToShot == 0)
+                if (Console.KeyAvailable)
+                {
+                    ConsoleKeyInfo key = Console.ReadKey(true);
+                    if (key.Key == ConsoleKey.Spacebar)
+                    {
+                        isReadyToShot = ShotFrequency;
+                        return true;
+                    }
+                }
+            return false;
         }
     }
 

@@ -19,13 +19,14 @@ namespace BadBattleCity
         // Client commands
         static public string[] commands = {
             "new",      // Request to connect to the server
-            ""
+            "res"       // Respawn request
             };
         // /Client commands
 
         public static Thread ServerSearch;
         public static bool isConnectedToServer = false;
         public static Connector connector = new Connector(new IPEndPoint(IPAddress.Broadcast, Server.Port), Port);
+        public static Player thisPlayer;
 
         #region ConnectingToTheServer
 
@@ -88,14 +89,47 @@ namespace BadBattleCity
 
         #endregion
 
-
         internal static void StartGame()
+        {
+            InitThisPlayer();
+            while (true)
+            {
+                connector.SyncReceive();
+
+                string[] message = Encoding.UTF8.GetString(connector.SyncReceive().Message).Split(' ');
+                ProcessReceivedCommands(message);
+
+                if (thisPlayer.Move())
+                    connector.Send("move " +
+                        thisPlayer.newCoords.X + " " +
+                        thisPlayer.newCoords.Y + " " +
+                        thisPlayer.direction, 
+                        connector.SenderDefaultEndPoint);
+                if (thisPlayer.Fire())
+                    connector.Send("shot ",
+                        connector.SenderDefaultEndPoint);
+                if (!thisPlayer.isAlive && thisPlayer.RemainingDeathPenalty == 0)
+                {
+                    connector.Send("res ",
+                        connector.SenderDefaultEndPoint);
+                    thisPlayer.RemainingDeathPenalty = -1;
+                }
+            }
+        }
+
+        private static void InitThisPlayer()
         {
             while (true)
             {
+                connector.SyncReceive();
                 string[] message = Encoding.UTF8.GetString(connector.SyncReceive().Message).Split(' ');
-                ProcessReceivedCommands(message);
+                if (message[0] == "init")
+                {
+                    thisPlayer = new Player(int.Parse(message[1]), new Map.Point(int.Parse(message[2]), int.Parse(message[3])));
+                }
+                connector.AllMessages.RemoveAt(0);
             }
+
         }
 
         internal static void ProcessReceivedCommands(string[] message)
@@ -105,7 +139,11 @@ namespace BadBattleCity
                 case "map":
                     Map.RedrawMap(message);
                     break;
+                case "tick":
+                    thisPlayer.TickTreatment();
+                    break;
             }
+            connector.AllMessages.RemoveAt(0);
         }
 
 
@@ -140,21 +178,6 @@ namespace BadBattleCity
         //    Server.Send("command" + " " + i % NumberOfTeams, Server.Clients[i]);
         //FindSpawners();
         //ServerGamingCycle();
-    }
-
-    private static void ServerGamingCycle()
-    {
-        DateTime time = DateTime.Now;
-        while (GameStarted)
-        {
-            CreatePlayers();
-            ExecuteClientsCommands();
-            MoveObjects();
-            UpdateClientsData();
-
-            Thread.Sleep(Math.Max(GameSpeed - DateTime.Now.Millisecond - time.Millisecond, 0));
-            time = DateTime.Now;
-        }
     }
 
     private static void CreatePlayers()

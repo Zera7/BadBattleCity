@@ -7,6 +7,10 @@ namespace BadBattleCity
     static class Map
     {
         public static Cells[,] Field;
+        public static MovableObject[,] movableObjects;
+        public static char[] spawners = { 'a', 's', 'd', 'f' };
+        public static char[] flags = { 'q', 'w', 'e', 'r' };
+
         public enum Cells
         {
             empty = '0',
@@ -119,9 +123,9 @@ namespace BadBattleCity
             }
         }
 
-        internal static void DrawCell(Point coords, ConsoleColor color, char c = '█')
+        internal static void DrawCell(Point coords, ConsoleColor backgroundColor, char c = ' ')
         {
-            Console.ForegroundColor = color;
+            Console.BackgroundColor = backgroundColor;
             int maxY = coords.Y * LineWidth + LineWidth;
             int maxX = coords.X * LineWidth * 2 + LineWidth * 2;
             for (int i = coords.Y * LineWidth; i < maxY; i++)

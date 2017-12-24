@@ -25,6 +25,7 @@ namespace BadBattleCity
             up,
             down
         }
+
         static public bool isReadyToStart = false;
         static public bool isStarted = false;
         static public bool isLobbyExists = false;
@@ -36,7 +37,6 @@ namespace BadBattleCity
             SuggestCreatingServer();
 
             while (Server.isRunning && !Game.isReadyToStart) Thread.Sleep(1000);
-            Console.WriteLine("Загрузка карты");
 
             Client.StartGame();
         }
@@ -49,7 +49,7 @@ namespace BadBattleCity
             {
                 Thread creatingServer = new Thread(InputNumberOfPlayers);
                 creatingServer.Start();
-                while (!isLobbyExists) Thread.Sleep(1000);
+                while (!isLobbyExists) Thread.Sleep(200);
                 if (!Server.isRunning)
                     if (creatingServer.IsAlive)
                         creatingServer.Abort();
