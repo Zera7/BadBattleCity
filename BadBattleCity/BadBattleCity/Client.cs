@@ -91,45 +91,40 @@ namespace BadBattleCity
 
         internal static void StartGame()
         {
-            InitThisPlayer();
             while (true)
             {
-                connector.SyncReceive();
-
                 string[] message = Encoding.UTF8.GetString(connector.SyncReceive().Message).Split(' ');
                 ProcessReceivedCommands(message);
-
-                if (thisPlayer.Move())
-                    connector.Send("move " +
-                        thisPlayer.newCoords.X + " " +
-                        thisPlayer.newCoords.Y + " " +
-                        thisPlayer.direction, 
-                        connector.SenderDefaultEndPoint);
-                if (thisPlayer.Fire())
-                    connector.Send("shot ",
-                        connector.SenderDefaultEndPoint);
-                if (!thisPlayer.isAlive && thisPlayer.RemainingDeathPenalty == 0)
+                if (thisPlayer != null)
                 {
-                    connector.Send("res ",
-                        connector.SenderDefaultEndPoint);
-                    thisPlayer.RemainingDeathPenalty = -1;
+                    if (thisPlayer.Move())
+                        connector.Send("move " +
+                            thisPlayer.newCoords.X + " " +
+                            thisPlayer.newCoords.Y + " " +
+                            thisPlayer.direction,
+                            connector.SenderDefaultEndPoint);
+                    if (thisPlayer.Fire())
+                        connector.Send("shot ",
+                            connector.SenderDefaultEndPoint);
+                    if (!thisPlayer.isAlive && thisPlayer.RemainingDeathPenalty == 0)
+                    {
+                        connector.Send("res ",
+                            connector.SenderDefaultEndPoint);
+                        thisPlayer.RemainingDeathPenalty = -1;
+                    }
                 }
+                
             }
         }
 
         private static void InitThisPlayer()
         {
-            while (true)
+            string[] message = Encoding.UTF8.GetString(connector.SyncReceive().Message).Split(' ');
+            if (message[0] == "init")
             {
-                connector.SyncReceive();
-                string[] message = Encoding.UTF8.GetString(connector.SyncReceive().Message).Split(' ');
-                if (message[0] == "init")
-                {
-                    thisPlayer = new Player(int.Parse(message[1]), new Map.Point(int.Parse(message[2]), int.Parse(message[3])));
-                }
-                connector.AllMessages.RemoveAt(0);
+                thisPlayer = new Player(int.Parse(message[1]), new Map.Point(int.Parse(message[2]), int.Parse(message[3])));
             }
-
+            connector.AllMessages.RemoveAt(0);
         }
 
         internal static void ProcessReceivedCommands(string[] message)
@@ -141,6 +136,9 @@ namespace BadBattleCity
                     break;
                 case "tick":
                     thisPlayer.TickTreatment();
+                    break;
+                case "init":
+                    InitThisPlayer();
                     break;
             }
             connector.AllMessages.RemoveAt(0);

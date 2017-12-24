@@ -110,7 +110,17 @@ namespace BadBattleCity
 
         private static string MoveObjects(int team)
         {
-            return "";
+            StringBuilder message = new StringBuilder();
+            for (int i = 0; i < Map.MapWidth; i++)
+            {
+                for (int j = 0; j < Map.MapWidth; j++)
+                {
+                    if (Map.movableObjects[i, j] != null && Map.movableObjects[i, j].team == team)
+                    {
+
+                    }
+                }
+            }
         }
 
         private static void ExecuteClientsCommands()
