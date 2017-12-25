@@ -15,7 +15,7 @@ namespace BadBattleCity
         // Game constants
         public const int ServerSearchTimeout = 3;
         public const int NumberOfTeams = 2;
-        public const int GameSpeed = 250;
+        public const int GameSpeed = 25;
         // /Game constants
 
         public enum Direction

@@ -14,6 +14,7 @@ namespace BadBattleCity
         public Map.Point newCoords;
         public bool isAlive = false;
         public int MoveFrequency;
+        public int IsReadyToMove = 0;
 
         public char GetChar()
         {

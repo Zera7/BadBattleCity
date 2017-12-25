@@ -24,7 +24,8 @@ namespace BadBattleCity
             "tick",     // Command to start the next iteration
             "init",     // Player creation
             "upd",      // Update map
-            "updd"      // Update movable map
+            "updd",     // Update movable map
+            "moved"     // Object moved
             };
         // /Server commands
         public static bool isRunning = false;
@@ -40,6 +41,13 @@ namespace BadBattleCity
 
         public static void Start()
         {
+            for (int i = 0; i < playersReadyToRespawn.Length; i++)
+            {
+                playersReadyToRespawn[i] = new List<Player>();
+                bullets[i] = new List<Bullet>();
+            }
+            Console.CursorVisible = false;
+
             connector.Start();
             CreateLobby();
             Map.DownloadMap();
@@ -55,6 +63,7 @@ namespace BadBattleCity
 
         private static void CreateLobby()
         {
+            connector.Start();
             while (!Game.isStarted)
             {
                 if (connector.Clients.Count < numberOfPlayers)
@@ -122,8 +131,14 @@ namespace BadBattleCity
 
         #region ClientCommandProcessing
 
-        private static void MovePlayer(string[] message, Player player)
+        private static void MovePlayer(string[] message, Player player, IPEndPoint address)
         {
+            player.newCoords.X = int.Parse(message[1]);
+            player.newCoords.Y = int.Parse(message[2]);
+            player.direction = (Game.Direction)int.Parse(message[3]);
+
+
+
             if (Map.Field[player.newCoords.Y, player.newCoords.X] == Map.Cells.empty)
                 if (Map.movableObjects[player.newCoords.Y, player.newCoords.X] == null ||
                     Map.movableObjects[player.newCoords.Y, player.newCoords.X].GetType().Name == "Bullet")
@@ -133,10 +148,12 @@ namespace BadBattleCity
 
                     player.coords.X = player.newCoords.X;
                     player.coords.Y = player.newCoords.Y;
+
+                    connector.Send("moved", address);
                 }
         }
 
-        private static void SelectAction(string[] message, Player player)
+        private static void SelectAction(string[] message, Player player, IPEndPoint address)
         {
             switch (message[0])
             {
@@ -144,7 +161,7 @@ namespace BadBattleCity
                     playersReadyToRespawn[player.team].Add(player);
                     break;
                 case "move":
-                    MovePlayer(message, player);
+                    MovePlayer(message, player, address);
                     break;
                 case "shot":
                     AddBullet(player);
@@ -156,8 +173,8 @@ namespace BadBattleCity
         {
             for (int i = 0; i < connector.AllMessages.Count;)
             {
-                string[] message = Encoding.UTF8.GetString(connector.SyncReceive().Message).Split(' ');
-                SelectAction(message, players[connector.AllMessages[0].Address]);
+                string[] message = Encoding.UTF8.GetString(connector.AllMessages[0].Message).Split(' ');
+                SelectAction(message, players[connector.AllMessages[0].Address], connector.AllMessages[0].Address);
                 connector.AllMessages.RemoveAt(0);
             }
         }
@@ -193,16 +210,19 @@ namespace BadBattleCity
                 CheckAllBulletsForCollisions();
                 RemoveDeadBullets();
 
-                SendMessageToAllClients(mapUpdate.ToString());
-                UpdateMovableMap();
+                if (mapUpdate.Length > 0)
+                SendMessageToAllClients("upd " + mapUpdate.ToString());
                 mapUpdate.Clear();
+                SendMessageToAllClients("tick");
+
+                UpdateMovableMap();
 
 
-
-                Thread.Sleep(
-                    Math.Max(Game.GameSpeed - (DateTime.Now.Millisecond + DateTime.Now.Second * 1000 -
-                    time.Millisecond - time.Second * 1000),
-                    0));
+                Thread.Sleep(Math.Max(Game.GameSpeed - (
+                    DateTime.Now.Millisecond + DateTime.Now.Second * 1000 -
+                    time.Millisecond - time.Second * 1000
+                    ), 0));
+                    
                 time = DateTime.Now;
             }
         }
@@ -211,6 +231,9 @@ namespace BadBattleCity
         {
             // хз работает или нет
             StringBuilder[] messages = new StringBuilder[Game.NumberOfTeams];
+            for (int i = 0; i < messages.Length; i++)
+                messages[i] = new StringBuilder();
+
             for (int i = 0; i < Map.MapWidth; i++)
             {
                 for (int j = 0; j < Map.MapWidth; j++)
@@ -218,15 +241,14 @@ namespace BadBattleCity
                     if (Map.movableObjects[i, j] != null)
                     {
                         char a = Map.movableObjects[i, j].GetChar();
-                        messages[i].Append(a + " " + j + " " + i + " ");
+                        messages[Map.movableObjects[i, j].team].Append(a + " " + j + " " + i + " ");
                     }
                 }
             }
             for (int i = 0; i < Game.NumberOfTeams; i++)
                 for (int j = 0; j < players.Count; j++)
                 {
-                    if (messages[i] != null)
-                        if (i == players[connector.Clients[j]].team)
+                    if (i == players[connector.Clients[j]].team)
                             connector.Send("updd " + i + " " + messages[i].ToString(), connector.Clients[j]);
                 }
         }
@@ -234,7 +256,7 @@ namespace BadBattleCity
         private static void CheckAllBulletsForCollisions()
         {
             for (int i = 0; i < bullets.Length; i++)
-                for (int j = 0; bullets[i] != null && j < bullets[i].Count; j++)
+                for (int j = 0; j < bullets[i].Count; j++)
                     bullets[i][j].ContinueMovement(mapUpdate);
         }
 
@@ -242,7 +264,7 @@ namespace BadBattleCity
         {
             for (int i = 0; i < bullets.Length; i++)
             {
-                for (int j = 0; bullets[i] != null && j < bullets[i].Count; j++)
+                for (int j = 0; j < bullets[i].Count; j++)
                 {
                     if (!bullets[i][j].isAlive)
                         bullets[i].RemoveAt(j--);
@@ -255,7 +277,6 @@ namespace BadBattleCity
             for (int i = 0; i < spawners.Count; i++)
             {
                 if (Map.movableObjects[spawners[i].Y, spawners[i].X] == null &&
-                     playersReadyToRespawn[i] != null &&
                     playersReadyToRespawn[i].Count > 0)
                 {
                     Map.movableObjects[spawners[i].Y, spawners[i].X] = playersReadyToRespawn[i][0];

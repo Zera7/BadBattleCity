@@ -28,6 +28,7 @@ namespace BadBattleCity
         public static bool isConnectedToServer = false;
         public static Connector connector = new Connector(new IPEndPoint(IPAddress.Broadcast, Server.Port), Port);
         public static Player thisPlayer;
+        public static List<Map.Point> movableObjects = new List<Map.Point>(); 
 
         #region ConnectingToTheServer
 
@@ -107,7 +108,7 @@ namespace BadBattleCity
                 connector.Send("move " +
                     thisPlayer.newCoords.X + " " +
                     thisPlayer.newCoords.Y + " " +
-                    thisPlayer.direction,
+                    (int)thisPlayer.direction,
                     connector.SenderDefaultEndPoint);
             if (thisPlayer.Fire())
                 connector.Send("shot ",
@@ -131,7 +132,6 @@ namespace BadBattleCity
         internal static void ProcessReceivedCommands()
         {
             string[] message = Encoding.UTF8.GetString(connector.SyncReceive().Message).Split(' ');
-
             switch (message[0])
             {
                 case "map":
@@ -147,14 +147,43 @@ namespace BadBattleCity
                     UpdateField(message);
                     break;
                 case "updd":
+                    UpdateMovableMap(message);
+                    break;
+                case "moved":
+                    thisPlayer.coords.X = thisPlayer.newCoords.X;
+                    thisPlayer.coords.Y = thisPlayer.newCoords.Y;
                     break;
             }
             connector.AllMessages.RemoveAt(0);
         }
 
+        private static void UpdateMovableMap(string[] message)
+        {
+            if (message.Length < 5)
+                return;
+            ConsoleColor color = int.Parse(message[1]) == thisPlayer.team ? Map.TeammateColor : Map.EnemyColor;
+            for (int i = 0; i < movableObjects.Count; i++)
+                Map.DrawCell(movableObjects[i], ConsoleColor.Black, ConsoleColor.Black);
+            movableObjects.Clear();
+
+            for (int i = 2; i < message.Length-2; i += 3)
+            {
+                char a = message[i][0];
+                int x = int.Parse(message[i + 1]);
+                int y = int.Parse(message[i + 2]);
+
+                movableObjects.Add(new Map.Point(x, y));
+                Map.DrawCell(new Map.Point(x, y), 
+                    ConsoleColor.Black, color, a);
+            }
+        }
+
         private static void UpdateField(string[] message)
         {
-
+            for (int i = 1; i < message.Length;)
+            {
+                Map.DrawCell(new Map.Point(int.Parse(message[i++]), int.Parse(message[i++])), ConsoleColor.Black, ConsoleColor.Black);
+            }
         }
 
 

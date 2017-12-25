@@ -8,6 +8,7 @@ namespace BadBattleCity
         {
             this.team = team;
             this.coords = coords;
+            MoveFrequency = 3;
         }
 
         public int deathPenalty = 0;
@@ -17,7 +18,6 @@ namespace BadBattleCity
 
 
         public int isReadyToShot = 0;
-        public int IsReadyToMove = 0;
 
         public void TickTreatment()
         {

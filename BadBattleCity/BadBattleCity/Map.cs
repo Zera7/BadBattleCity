@@ -6,6 +6,9 @@ namespace BadBattleCity
 {
     static class Map
     {
+        public const ConsoleColor TeammateColor = ConsoleColor.Blue;
+        public const ConsoleColor EnemyColor = ConsoleColor.Red;
+
         public static Cells[,] Field;
         public static MovableObject[,] movableObjects;
         public static char[] spawners = { 'a', 's', 'd', 'f' };
@@ -43,10 +46,7 @@ namespace BadBattleCity
             {
                 Point point = new Point(int.Parse(message[i++]), int.Parse(message[i++]));
                 char type = message[i++][0];
-                if (type < 10)
-                    DrawCell(point, GetColor((Cells)type));
-                else
-                    DrawCell(point, GetColor((Cells)type), type);
+                DrawCell(point, GetColor((Cells)type), ConsoleColor.Black);
             }
         }
 
@@ -123,9 +123,10 @@ namespace BadBattleCity
             }
         }
 
-        internal static void DrawCell(Point coords, ConsoleColor backgroundColor, char c = ' ')
+        internal static void DrawCell(Point coords, ConsoleColor backgroundColor, ConsoleColor color, char c = ' ')
         {
             Console.BackgroundColor = backgroundColor;
+            Console.ForegroundColor = color;
             int maxY = coords.Y * LineWidth + LineWidth;
             int maxX = coords.X * LineWidth * 2 + LineWidth * 2;
             for (int i = coords.Y * LineWidth; i < maxY; i++)

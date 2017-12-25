@@ -22,7 +22,7 @@ namespace BadBattleCity
                 if (Map.Field[newCoords.Y, newCoords.X] == Map.Cells.brick)
                 {
                     Map.Field[newCoords.Y, newCoords.X] = Map.Cells.empty;
-                    message.Append(newCoords.Y + " " + newCoords.X + " " + Map.Cells.empty + " ");
+                    message.Append(newCoords.X + " " + newCoords.Y + " " + Map.Cells.empty + " ");
                 }
                 Map.movableObjects[coords.Y, coords.X] = null;
                 isAlive = false;
