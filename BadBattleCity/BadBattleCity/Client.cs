@@ -126,6 +126,7 @@ namespace BadBattleCity
             if (message[0] == "init")
             {
                 thisPlayer = new Player(int.Parse(message[1]), new Map.Point(int.Parse(message[2]), int.Parse(message[3])));
+                movableObjects.Add(thisPlayer.coords);
             }
         }
 
@@ -166,14 +167,14 @@ namespace BadBattleCity
                 Map.DrawCell(movableObjects[i], ConsoleColor.Black, ConsoleColor.Black);
             movableObjects.Clear();
 
-            for (int i = 2; i < message.Length-2; i += 3)
+            for (int i = 2; i < message.Length - 2; i += 3)
             {
                 char a = message[i][0];
                 int x = int.Parse(message[i + 1]);
                 int y = int.Parse(message[i + 2]);
 
                 movableObjects.Add(new Map.Point(x, y));
-                Map.DrawCell(new Map.Point(x, y), 
+                Map.DrawCell(new Map.Point(x, y),
                     ConsoleColor.Black, color, a);
             }
         }
@@ -185,8 +186,6 @@ namespace BadBattleCity
                 Map.DrawCell(new Map.Point(int.Parse(message[i++]), int.Parse(message[i++])), ConsoleColor.Black, ConsoleColor.Black);
             }
         }
-
-
 
         // /Connecting to the server
     }

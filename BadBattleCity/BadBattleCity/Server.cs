@@ -50,10 +50,11 @@ namespace BadBattleCity
 
             connector.Start();
             CreateLobby();
-            Map.DownloadMap();
+            do {
+                Map.DownloadMap();
+            } while (!CreateListOfSpawners());
             Map.movableObjects = new MovableObject[Map.MapWidth, Map.MapWidth];
             SendMessageToAllClients("map" + " " + Map.GetStringMap());
-            CreateListOfSpawners();
             CreateDictionaryOfPlayers();
             InitPlayers();
             StartGameCycle();
@@ -79,7 +80,6 @@ namespace BadBattleCity
                             Console.WriteLine("К серверу добавлен новый клиент:" + connector.AllMessages[0].Address);
                         }
                         connector.AllMessages.RemoveAt(0);
-
                     }
                 }
                 else
@@ -94,7 +94,7 @@ namespace BadBattleCity
         }
 
 
-        private static void CreateListOfSpawners()
+        private static bool CreateListOfSpawners()
         {
             for (int i = 0; i < Map.MapWidth; i++)
             {
@@ -104,6 +104,9 @@ namespace BadBattleCity
                         spawners.Add(new Map.Point(j, i));
                 }
             }
+            if (spawners.Count == 0)
+                Console.WriteLine("Карта не корректна: не обнаружено точек появления");
+            return spawners.Count > 0;
         }
 
         private static void CreateDictionaryOfPlayers()
@@ -111,7 +114,7 @@ namespace BadBattleCity
             for (int i = 0; i < connector.Clients.Count; i++)
             {
                 players.Add(connector.Clients[i],
-                    new Player(i % Game.NumberOfTeams, spawners[i % Game.NumberOfTeams]));
+                    new Player(i % Game.NumberOfTeams, new Map.Point (spawners[i % Game.NumberOfTeams].X, spawners[i % Game.NumberOfTeams].Y)));
             }
         }
 
@@ -136,8 +139,6 @@ namespace BadBattleCity
             player.newCoords.X = int.Parse(message[1]);
             player.newCoords.Y = int.Parse(message[2]);
             player.direction = (Game.Direction)int.Parse(message[3]);
-
-
 
             if (Map.Field[player.newCoords.Y, player.newCoords.X] == Map.Cells.empty)
                 if (Map.movableObjects[player.newCoords.Y, player.newCoords.X] == null ||
@@ -229,7 +230,6 @@ namespace BadBattleCity
 
         private static void UpdateMovableMap()
         {
-            // хз работает или нет
             StringBuilder[] messages = new StringBuilder[Game.NumberOfTeams];
             for (int i = 0; i < messages.Length; i++)
                 messages[i] = new StringBuilder();
@@ -245,6 +245,7 @@ namespace BadBattleCity
                     }
                 }
             }
+
             for (int i = 0; i < Game.NumberOfTeams; i++)
                 for (int j = 0; j < players.Count; j++)
                 {
@@ -280,6 +281,7 @@ namespace BadBattleCity
                     playersReadyToRespawn[i].Count > 0)
                 {
                     Map.movableObjects[spawners[i].Y, spawners[i].X] = playersReadyToRespawn[i][0];
+                    playersReadyToRespawn[i].RemoveAt(0);
                 }
             }
         }
