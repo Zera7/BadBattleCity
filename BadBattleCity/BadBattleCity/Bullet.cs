@@ -8,6 +8,7 @@ namespace BadBattleCity
 {
     class Bullet : MovableObject
     {
+        public const int StartingSpeed = 10;
         Player substitutedPlayer;
         Map.Point deltaCoords;
         
@@ -19,19 +20,18 @@ namespace BadBattleCity
             this.coords = new Map.Point(coords.X, coords.Y);
             newCoords = new Map.Point(coords.X, coords.Y);
             isAlive = true;
+            MoveFrequency = StartingSpeed;
         }
         public void ContinueMovement(StringBuilder message)
         {
-            if (substitutedPlayer != null && Map.Point.ComparePoints(substitutedPlayer.coords, coords))
-                Map.movableObjects[coords.Y, coords.X] = substitutedPlayer;
-            else if (Map.movableObjects[coords.Y, coords.X] == this)
-                Map.movableObjects[coords.Y, coords.X] = null;
-                substitutedPlayer = null;
-
-            if (Map.Field[newCoords.Y, newCoords.X] != Map.Cells.empty)
-                CollideBulletWithField();
-            else
-                CollideBulletWithMovableObject();
+            if (IsReadyToMove <= 0)
+            {
+                if (Map.Field[newCoords.Y, newCoords.X] != Map.Cells.empty)
+                    CollideBulletWithField();
+                else
+                    CollideBulletWithMovableObject();
+            }
+            IsReadyToMove--;
         }
 
         private void CollideBulletWithMovableObject()
@@ -64,12 +64,21 @@ namespace BadBattleCity
 
         private void MoveBullet()
         {
-            Map.movableObjects[newCoords.Y, newCoords.X] = this;
-            coords.X = newCoords.X;
-            coords.Y = newCoords.Y;
 
-            newCoords.X += deltaCoords.X;
-            newCoords.Y += deltaCoords.Y;
+                if (substitutedPlayer != null && Map.Point.ComparePoints(substitutedPlayer.coords, coords))
+                    Map.movableObjects[coords.Y, coords.X] = substitutedPlayer;
+                else if (Map.movableObjects[coords.Y, coords.X] == this)
+                    Map.movableObjects[coords.Y, coords.X] = null;
+                substitutedPlayer = null;
+
+                Map.movableObjects[newCoords.Y, newCoords.X] = this;
+                coords.X = newCoords.X;
+                coords.Y = newCoords.Y;
+
+                newCoords.X += deltaCoords.X;
+                newCoords.Y += deltaCoords.Y;
+                IsReadyToMove = MoveFrequency;
+
         }
     }
 }

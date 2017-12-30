@@ -182,18 +182,12 @@ namespace BadBattleCity
 
         private static void AddBullet(Player player)
         {
-            int deltaX = 0;
-            int deltaY = 0;
-            if (player.direction == MovableObject.Direction.left) deltaX = -1;
-            if (player.direction == MovableObject.Direction.right) deltaX = 1;
-            if (player.direction == MovableObject.Direction.up) deltaY = -1;
-            if (player.direction == MovableObject.Direction.down) deltaY = 1;
-
-                                     bullets[player.team].Add(new Bullet(
-                player.team,
-                player.direction,
-                new Map.Point(player.coords.X + deltaX, player.coords.Y + deltaY)
-                ));
+            Map.Point deltaCoords = MovableObject.GetDeltaCoords(player.direction);
+            bullets[player.team].Add(
+                new Bullet(
+                    player.team,
+                    player.direction,
+                    new Map.Point(player.coords.X + deltaCoords.X, player.coords.Y + deltaCoords.Y)));
         }
 
         #endregion
