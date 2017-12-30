@@ -36,6 +36,11 @@ namespace BadBattleCity
                 X = x;
                 Y = y;
             }
+            static public bool ComparePoints(Point a, Point b)
+            {
+                if (a.X == b.X && a.Y == b.Y) return true;
+                return false;
+            }
         }
         public static int LineWidth = 1;
         public static int MapWidth;

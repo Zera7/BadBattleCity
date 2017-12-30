@@ -18,13 +18,7 @@ namespace BadBattleCity
         public const int GameSpeed = 25;
         // /Game constants
 
-        public enum Direction
-        {
-            left,
-            right,
-            up,
-            down
-        }
+
 
         static public bool isReadyToStart = false;
         static public bool isStarted = false;

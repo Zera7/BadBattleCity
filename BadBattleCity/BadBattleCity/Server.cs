@@ -37,7 +37,7 @@ namespace BadBattleCity
 
         public static List<Map.Point> spawners = new List<Map.Point>();
         public static List<Player>[] playersReadyToRespawn = new List<Player>[Game.NumberOfTeams];
-        static StringBuilder mapUpdate = new StringBuilder();
+        static StringBuilder staticMapUpdate = new StringBuilder();
 
         public static void Start()
         {
@@ -138,7 +138,7 @@ namespace BadBattleCity
         {
             player.newCoords.X = int.Parse(message[1]);
             player.newCoords.Y = int.Parse(message[2]);
-            player.direction = (Game.Direction)int.Parse(message[3]);
+            player.direction = (MovableObject.Direction)int.Parse(message[3]);
 
             if (Map.Field[player.newCoords.Y, player.newCoords.X] == Map.Cells.empty)
                 if (Map.movableObjects[player.newCoords.Y, player.newCoords.X] == null ||
@@ -184,12 +184,12 @@ namespace BadBattleCity
         {
             int deltaX = 0;
             int deltaY = 0;
-            if (player.direction == Game.Direction.left) deltaX = -1;
-            if (player.direction == Game.Direction.right) deltaX = 1;
-            if (player.direction == Game.Direction.up) deltaY = -1;
-            if (player.direction == Game.Direction.down) deltaY = 1;
+            if (player.direction == MovableObject.Direction.left) deltaX = -1;
+            if (player.direction == MovableObject.Direction.right) deltaX = 1;
+            if (player.direction == MovableObject.Direction.up) deltaY = -1;
+            if (player.direction == MovableObject.Direction.down) deltaY = 1;
 
-            bullets[player.team].Add(new Bullet(
+                                     bullets[player.team].Add(new Bullet(
                 player.team,
                 player.direction,
                 new Map.Point(player.coords.X + deltaX, player.coords.Y + deltaY)
@@ -208,12 +208,15 @@ namespace BadBattleCity
             {
                 RespawnPlayers();
                 ExecuteClientsCommands();
-                CheckAllBulletsForCollisions();
+                MoveAllBullets();
                 RemoveDeadBullets();
 
-                if (mapUpdate.Length > 0)
-                SendMessageToAllClients("upd " + mapUpdate.ToString());
-                mapUpdate.Clear();
+                if (staticMapUpdate.Length > 0)
+                {
+                SendMessageToAllClients("upd " + staticMapUpdate.ToString());
+                staticMapUpdate.Clear();
+                }
+
                 SendMessageToAllClients("tick");
 
                 UpdateMovableMap();
@@ -254,11 +257,11 @@ namespace BadBattleCity
                 }
         }
 
-        private static void CheckAllBulletsForCollisions()
+        private static void MoveAllBullets()
         {
             for (int i = 0; i < bullets.Length; i++)
                 for (int j = 0; j < bullets[i].Count; j++)
-                    bullets[i][j].ContinueMovement(mapUpdate);
+                    bullets[i][j].ContinueMovement(staticMapUpdate);
         }
 
         private static void RemoveDeadBullets()

@@ -8,31 +8,68 @@ namespace BadBattleCity
 {
     class Bullet : MovableObject
     {
-        public Bullet(int team, Game.Direction direction, Map.Point coords)
+        Player substitutedPlayer;
+        Map.Point deltaCoords;
+        
+        public Bullet(int team, MovableObject.Direction direction, Map.Point coords)
         { 
+            deltaCoords = GetDeltaCoords(direction);
             this.team = team;
             this.direction = direction;
             this.coords = new Map.Point(coords.X, coords.Y);
             newCoords = new Map.Point(coords.X, coords.Y);
+            isAlive = true;
         }
         public void ContinueMovement(StringBuilder message)
         {
+            if (substitutedPlayer != null && Map.Point.ComparePoints(substitutedPlayer.coords, coords))
+                Map.movableObjects[coords.Y, coords.X] = substitutedPlayer;
+            else if (Map.movableObjects[coords.Y, coords.X] == this)
+                Map.movableObjects[coords.Y, coords.X] = null;
+                substitutedPlayer = null;
+
             if (Map.Field[newCoords.Y, newCoords.X] != Map.Cells.empty)
+                CollideBulletWithField();
+            else
+                CollideBulletWithMovableObject();
+        }
+
+        private void CollideBulletWithMovableObject()
+        {
+            if (Map.movableObjects[newCoords.Y, newCoords.X] != null)
             {
-                if (Map.Field[newCoords.Y, newCoords.X] == Map.Cells.brick)
+                if (Map.movableObjects[newCoords.Y, newCoords.X].team == team)
                 {
-                    Map.Field[newCoords.Y, newCoords.X] = Map.Cells.empty;
-                    message.Append(newCoords.X + " " + newCoords.Y + " " + Map.Cells.empty + " ");
+                    if (Map.movableObjects[newCoords.Y, newCoords.X].GetType().Name == "Player")
+                        substitutedPlayer = (Player)Map.movableObjects[newCoords.Y, newCoords.X];
+                    MoveBullet();
                 }
-                Map.movableObjects[coords.Y, coords.X] = null;
-                isAlive = false;
+                else
+                {
+                    isAlive = false;
+                    Map.movableObjects[newCoords.Y, newCoords.X].isAlive = false;
+                }
             }
-            else if (Map.movableObjects[newCoords.Y, newCoords.X] != null)
-            {
-                Map.movableObjects[coords.Y, coords.X] = null;
-                Map.movableObjects[newCoords.Y, newCoords.X] = null;
-                isAlive = false;
-            }
+            else
+                MoveBullet();
+        }
+
+        private void CollideBulletWithField()
+        {
+            if (Map.Field[newCoords.Y, newCoords.X] == Map.Cells.brick)
+                Map.Field[newCoords.Y, newCoords.X] = Map.Cells.empty;
+            Map.movableObjects[coords.Y, coords.X] = null;
+            isAlive = false;
+        }
+
+        private void MoveBullet()
+        {
+            Map.movableObjects[newCoords.Y, newCoords.X] = this;
+            coords.X = newCoords.X;
+            coords.Y = newCoords.Y;
+
+            newCoords.X += deltaCoords.X;
+            newCoords.Y += deltaCoords.Y;
         }
     }
 }

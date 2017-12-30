@@ -28,7 +28,7 @@ namespace BadBattleCity
         public static bool isConnectedToServer = false;
         public static Connector connector = new Connector(new IPEndPoint(IPAddress.Broadcast, Server.Port), Port);
         public static Player thisPlayer;
-        public static List<Map.Point> movableObjects = new List<Map.Point>(); 
+        public static List<Map.Point> movableObjects = new List<Map.Point>();
 
         #region ConnectingToTheServer
 
@@ -104,20 +104,40 @@ namespace BadBattleCity
 
         private static void SendCommandsToServer()
         {
-            if (thisPlayer.Move())
-                connector.Send("move " +
-                    thisPlayer.newCoords.X + " " +
-                    thisPlayer.newCoords.Y + " " +
-                    (int)thisPlayer.direction,
-                    connector.SenderDefaultEndPoint);
-            if (thisPlayer.Fire())
-                connector.Send("shot ",
-                    connector.SenderDefaultEndPoint);
+            ProcessPressedKeys(Player.GetKeystrokes());
+
+
             if (!thisPlayer.isAlive && thisPlayer.RemainingDeathPenalty == 0)
             {
                 connector.Send("res ",
                     connector.SenderDefaultEndPoint);
                 thisPlayer.RemainingDeathPenalty = -1;
+            }
+        }
+
+        private static void ProcessPressedKeys(ConsoleKey key)
+        {
+            if (key == ConsoleKey.Spacebar)
+            {
+                if (thisPlayer.Fire())
+                    connector.Send("shot ",
+                        connector.SenderDefaultEndPoint);
+            }
+            else
+            {
+                MovableObject.Direction direction = MovableObject.Direction.left;
+                bool clickedArrow = false;
+                if (key == ConsoleKey.UpArrow) { direction = MovableObject.Direction.up; clickedArrow = true; }
+                if (key == ConsoleKey.DownArrow) { direction = MovableObject.Direction.down; clickedArrow = true; }
+                if (key == ConsoleKey.LeftArrow) { direction = MovableObject.Direction.left; clickedArrow = true; }
+                if (key == ConsoleKey.RightArrow) { direction = MovableObject.Direction.right; clickedArrow = true; }
+                if (clickedArrow)
+                    if (thisPlayer.Move(direction))
+                        connector.Send("move " +
+                thisPlayer.newCoords.X + " " +
+                thisPlayer.newCoords.Y + " " +
+                (int)thisPlayer.direction,
+                connector.SenderDefaultEndPoint);
             }
         }
 
@@ -162,6 +182,7 @@ namespace BadBattleCity
         {
             if (message.Length < 5)
                 return;
+
             ConsoleColor color = int.Parse(message[1]) == thisPlayer.team ? Map.TeammateColor : Map.EnemyColor;
             for (int i = 0; i < movableObjects.Count; i++)
                 Map.DrawCell(movableObjects[i], ConsoleColor.Black, ConsoleColor.Black);

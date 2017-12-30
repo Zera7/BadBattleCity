@@ -26,71 +26,38 @@ namespace BadBattleCity
             if (RemainingDeathPenalty > 0) RemainingDeathPenalty--;
         }
 
-        public bool Move()
+        public static ConsoleKey GetKeystrokes()
+        {
+            if (Console.KeyAvailable)
+                return Console.ReadKey(true).Key;
+            else
+                return 0;
+        }
+
+        public bool Move(MovableObject.Direction direction)
         {
             if (IsReadyToMove == 0)
-                if (Console.KeyAvailable)
+            {
+                if (direction == this.direction)
                 {
-                    ConsoleKeyInfo key = Console.ReadKey(true);
-                    switch (key.Key)
-                    {
-                        case ConsoleKey.UpArrow:
-                            if (direction == Game.Direction.up)
-                            {
-                                newCoords.X = coords.X;
-                                newCoords.Y = coords.Y - 1;
-                            }
-                            else
-                                direction = Game.Direction.up;
-                            IsReadyToMove = MoveFrequency;
-                            return true;
-                        case ConsoleKey.DownArrow:
-                            if (direction == Game.Direction.down)
-                            {
-                                newCoords.X = coords.X;
-                                newCoords.Y = coords.Y + 1;
-                            }
-                            else
-                                direction = Game.Direction.down;
-                            IsReadyToMove = MoveFrequency;
-                            return true;
-                        case ConsoleKey.LeftArrow:
-                            if (direction == Game.Direction.left)
-                            {
-                                newCoords.X = coords.X - 1;
-                                newCoords.Y = coords.Y;
-                            }
-                            else
-                                direction = Game.Direction.left;
-                            IsReadyToMove = MoveFrequency;
-                            return true;
-                        case ConsoleKey.RightArrow:
-                            if (direction == Game.Direction.right)
-                            {
-                                newCoords.X = coords.X + 1;
-                                newCoords.Y = coords.Y;
-                            }
-                            else
-                                direction = Game.Direction.right;
-                            IsReadyToMove = MoveFrequency;
-                            return true;
-                    }
+                    Map.Point deltaCoords = GetDeltaCoords(direction);
+                    newCoords = new Map.Point(coords.X + deltaCoords.X, coords.Y + deltaCoords.Y);
                 }
+                else
+                    this.direction = direction;
+                IsReadyToMove = MoveFrequency;
+                return true;
+            }
             return false;
-        }
+    }
 
         public bool Fire()
         {
             if (isReadyToShot == 0)
-                if (Console.KeyAvailable)
-                {
-                    ConsoleKeyInfo key = Console.ReadKey(true);
-                    if (key.Key == ConsoleKey.Spacebar)
-                    {
-                        isReadyToShot = ShotFrequency;
-                        return true;
-                    }
-                }
+            {
+                isReadyToShot = ShotFrequency;
+                return true;
+            }
             return false;
         }
     }
