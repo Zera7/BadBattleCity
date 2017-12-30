@@ -13,8 +13,8 @@ namespace BadBattleCity
         public Map.Point coords;
         public Map.Point newCoords;
         public bool isAlive = false;
-        public int MoveFrequency;
-        public int IsReadyToMove = 0;
+        public int moveFrequency;
+        public int beforeMoving = 0;
 
         public enum Direction
         {

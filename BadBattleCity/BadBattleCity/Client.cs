@@ -28,7 +28,6 @@ namespace BadBattleCity
         public static bool isConnectedToServer = false;
         public static Connector connector = new Connector(new IPEndPoint(IPAddress.Broadcast, Server.Port), Port);
         public static Player thisPlayer;
-        public static List<Map.Point> movableObjects = new List<Map.Point>();
 
         #region ConnectingToTheServer
 
@@ -47,11 +46,12 @@ namespace BadBattleCity
                 for (int i = 0; i < connector.AllMessages.Count;)
                 {
                     string[] message = Encoding.UTF8.GetString(connector.AllMessages[0].Message).Split(' ');
+                    IPEndPoint address = connector.AllMessages[0].Address;
                     connector.AllMessages.RemoveAt(0);
                     if (message[0] == "hi")
                     {
                         connector.Stop();
-                        connector = new Connector(connector.LastReseivePoint, Port);
+                        connector = new Connector(address, Port);
                         connector.Send("new", connector.SenderDefaultEndPoint);
                         Console.WriteLine("Сервер найден");
                         Console.WriteLine("Попытка подключения");
@@ -84,8 +84,9 @@ namespace BadBattleCity
                 }
                 Thread.Sleep(1000);
             }
-            Console.WriteLine("Подключение не подтверждено");
+            Console.WriteLine("Подключение не подтверждено. Поиск сервера продолжен");
             connector.Stop();
+            connector = new Connector(new IPEndPoint(IPAddress.Broadcast, Server.Port), Port);
             return false;
         }
 
@@ -93,45 +94,51 @@ namespace BadBattleCity
 
         internal static void StartGame()
         {
+            Console.CursorVisible = false;
             while (true)
             {
-                ProcessReceivedCommands();
+                string[] message = Encoding.UTF8.GetString(connector.SyncReceive().Message).Split(' ');
+
+                ProcessReceivedCommands(message);
+
                 if (thisPlayer != null)
+                {
+                    thisPlayer.UpdatePlayerCommands();
                     SendCommandsToServer();
+                }
+                    
 
             }
         }
 
         private static void SendCommandsToServer()
         {
-            ProcessPressedKeys(Player.GetKeystrokes());
-
+            ProcessPressedKeys();
 
             if (!thisPlayer.isAlive && thisPlayer.RemainingDeathPenalty == 0)
             {
-                connector.Send("res ",
+                connector.Send("res",
                     connector.SenderDefaultEndPoint);
                 thisPlayer.RemainingDeathPenalty = -1;
             }
         }
 
-        private static void ProcessPressedKeys(ConsoleKey key)
+        private static void ProcessPressedKeys()
         {
-            if (key == ConsoleKey.Spacebar)
-            {
+            if (thisPlayer.isShot)
                 if (thisPlayer.Fire())
-                    connector.Send("shot ",
+                    connector.Send("shot",
                         connector.SenderDefaultEndPoint);
-            }
-            else
+
+            if (thisPlayer.key != 0)
             {
                 MovableObject.Direction direction = MovableObject.Direction.left;
-                bool clickedArrow = false;
-                if (key == ConsoleKey.UpArrow) { direction = MovableObject.Direction.up; clickedArrow = true; }
-                if (key == ConsoleKey.DownArrow) { direction = MovableObject.Direction.down; clickedArrow = true; }
-                if (key == ConsoleKey.LeftArrow) { direction = MovableObject.Direction.left; clickedArrow = true; }
-                if (key == ConsoleKey.RightArrow) { direction = MovableObject.Direction.right; clickedArrow = true; }
-                if (clickedArrow)
+                bool moved = false;
+                if (thisPlayer.key == ConsoleKey.UpArrow) { direction = MovableObject.Direction.up; moved = true; }
+                if (thisPlayer.key == ConsoleKey.DownArrow) { direction = MovableObject.Direction.down; moved = true; }
+                if (thisPlayer.key == ConsoleKey.LeftArrow) { direction = MovableObject.Direction.left; moved = true; }
+                if (thisPlayer.key == ConsoleKey.RightArrow) { direction = MovableObject.Direction.right; moved = true; }
+                if (moved)
                     if (thisPlayer.Move(direction))
                         connector.Send("move " +
                 thisPlayer.newCoords.X + " " +
@@ -146,13 +153,11 @@ namespace BadBattleCity
             if (message[0] == "init")
             {
                 thisPlayer = new Player(int.Parse(message[1]), new Map.Point(int.Parse(message[2]), int.Parse(message[3])));
-                movableObjects.Add(thisPlayer.coords);
             }
         }
 
-        internal static void ProcessReceivedCommands()
+        internal static void ProcessReceivedCommands(string[] message)
         {
-            string[] message = Encoding.UTF8.GetString(connector.SyncReceive().Message).Split(' ');
             switch (message[0])
             {
                 case "map":
@@ -180,22 +185,24 @@ namespace BadBattleCity
 
         private static void UpdateMovableMap(string[] message)
         {
-            if (message.Length < 5)
+            if (message.Length < 7)
                 return;
 
             ConsoleColor color = int.Parse(message[1]) == thisPlayer.team ? Map.TeammateColor : Map.EnemyColor;
-            for (int i = 0; i < movableObjects.Count; i++)
-                Map.DrawCell(movableObjects[i], ConsoleColor.Black, ConsoleColor.Black);
-            movableObjects.Clear();
 
-            for (int i = 2; i < message.Length - 2; i += 3)
+            for (int i = 2; i < message.Length - 2; i += 5)
             {
                 char a = message[i][0];
                 int x = int.Parse(message[i + 1]);
                 int y = int.Parse(message[i + 2]);
+                int newX = int.Parse(message[i + 3]);
+                int newY = int.Parse(message[i + 4]);
 
-                movableObjects.Add(new Map.Point(x, y));
                 Map.DrawCell(new Map.Point(x, y),
+                    ConsoleColor.Black, ConsoleColor.Black);
+
+                if (newX != -1)
+                    Map.DrawCell(new Map.Point(newX, newY),
                     ConsoleColor.Black, color, a);
             }
         }

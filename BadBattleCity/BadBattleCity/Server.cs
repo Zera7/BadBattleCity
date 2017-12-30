@@ -39,6 +39,9 @@ namespace BadBattleCity
         public static List<Player>[] playersReadyToRespawn = new List<Player>[Game.NumberOfTeams];
         static StringBuilder staticMapUpdate = new StringBuilder();
 
+        public static StringBuilder[] movedObjects = new StringBuilder[Game.NumberOfTeams];
+            
+
         public static void Start()
         {
             for (int i = 0; i < playersReadyToRespawn.Length; i++)
@@ -46,7 +49,6 @@ namespace BadBattleCity
                 playersReadyToRespawn[i] = new List<Player>();
                 bullets[i] = new List<Bullet>();
             }
-            Console.CursorVisible = false;
 
             connector.Start();
             CreateLobby();
@@ -111,6 +113,9 @@ namespace BadBattleCity
 
         private static void CreateDictionaryOfPlayers()
         {
+            for (int i = 0; i < movedObjects.Length; i++)
+                movedObjects[i] = new StringBuilder();
+
             for (int i = 0; i < connector.Clients.Count; i++)
             {
                 players.Add(connector.Clients[i],
@@ -136,22 +141,37 @@ namespace BadBattleCity
 
         private static void MovePlayer(string[] message, Player player, IPEndPoint address)
         {
-            player.newCoords.X = int.Parse(message[1]);
-            player.newCoords.Y = int.Parse(message[2]);
-            player.direction = (MovableObject.Direction)int.Parse(message[3]);
+            Console.SetCursorPosition(0, 0);
+            Console.WriteLine("YES" + player.team);
+            try
+            {
+                player.newCoords.X = int.Parse(message[1]);
+                player.newCoords.Y = int.Parse(message[2]);
 
-            if (Map.Field[player.newCoords.Y, player.newCoords.X] == Map.Cells.empty)
-                if (Map.movableObjects[player.newCoords.Y, player.newCoords.X] == null ||
-                    Map.movableObjects[player.newCoords.Y, player.newCoords.X].GetType().Name == "Bullet")
-                {
-                    Map.movableObjects[player.coords.Y, player.coords.X] = null;
-                    Map.movableObjects[player.newCoords.Y, player.newCoords.X] = player;
+                player.direction = (MovableObject.Direction)int.Parse(message[3]);
 
-                    player.coords.X = player.newCoords.X;
-                    player.coords.Y = player.newCoords.Y;
+                char a = player.GetChar();
+                Server.movedObjects[player.team].Append(
+                    a + " " + player.coords.X + " " + player.coords.Y + " ");
 
-                    connector.Send("moved", address);
-                }
+                if (Map.Field[player.newCoords.Y, player.newCoords.X] == Map.Cells.empty)
+                    if (Map.movableObjects[player.newCoords.Y, player.newCoords.X] == null ||
+                        Map.movableObjects[player.newCoords.Y, player.newCoords.X].GetType().Name == "Bullet")
+                    {
+                        Map.movableObjects[player.coords.Y, player.coords.X] = null;
+                        Map.movableObjects[player.newCoords.Y, player.newCoords.X] = player;
+
+                        player.coords.X = player.newCoords.X;
+                        player.coords.Y = player.newCoords.Y;
+
+                        connector.Send("moved", address);
+                    }
+                Server.movedObjects[player.team].Append(player.coords.X + " " + player.coords.Y + " ");
+            }
+            catch (Exception)
+            {
+
+            }
         }
 
         private static void SelectAction(string[] message, Player player, IPEndPoint address)
@@ -227,28 +247,12 @@ namespace BadBattleCity
 
         private static void UpdateMovableMap()
         {
-            StringBuilder[] messages = new StringBuilder[Game.NumberOfTeams];
-            for (int i = 0; i < messages.Length; i++)
-                messages[i] = new StringBuilder();
-
-            for (int i = 0; i < Map.MapWidth; i++)
-            {
-                for (int j = 0; j < Map.MapWidth; j++)
-                {
-                    if (Map.movableObjects[i, j] != null)
-                    {
-                        char a = Map.movableObjects[i, j].GetChar();
-                        messages[Map.movableObjects[i, j].team].Append(a + " " + j + " " + i + " ");
-                    }
-                }
-            }
-
             for (int i = 0; i < Game.NumberOfTeams; i++)
                 for (int j = 0; j < players.Count; j++)
-                {
-                    if (i == players[connector.Clients[j]].team)
-                            connector.Send("updd " + i + " " + messages[i].ToString(), connector.Clients[j]);
-                }
+                    connector.Send("updd " + i + " " + movedObjects[i].ToString(), connector.Clients[j]);
+
+            for (int i = 0; i < movedObjects.Length; i++)
+                movedObjects[i].Clear();
         }
 
         private static void MoveAllBullets()
@@ -265,7 +269,14 @@ namespace BadBattleCity
                 for (int j = 0; j < bullets[i].Count; j++)
                 {
                     if (!bullets[i][j].isAlive)
+                    {
+                        if (Map.Field[bullets[i][j].coords.Y,bullets[i][j].coords.X] == Map.Cells.empty ||
+                            Map.Field[bullets[i][j].coords.Y, bullets[i][j].coords.X] == Map.Cells.brick)
+                        Server.movedObjects[bullets[i][j].team].Append(
+                            "█ " + bullets[i][j].coords.X + " " + bullets[i][j].coords.Y + " " + -1 + " " + -1 + " ");
+
                         bullets[i].RemoveAt(j--);
+                    }
                 }
             }
         }

@@ -4,37 +4,45 @@ namespace BadBattleCity
 {
     class Player : MovableObject
     {
+        public const int StartingSpeed = 5;
+        public int deathPenalty = 0;
+        public int RemainingDeathPenalty = 0;
+
+        public int ShotFrequency = 30;
+        public int beforeShot = 0;
+
+        public ConsoleKey key;
+        public bool isShot = false;
+
         public Player(int team, Map.Point coords)
         {
             this.team = team;
             this.coords = coords;
-            MoveFrequency = 10;
+            moveFrequency = StartingSpeed;
         }
-
-        public int deathPenalty = 0;
-        public int RemainingDeathPenalty = 0;
-
-        public int ShotFrequency = 3;
-        public int isReadyToShot = 0;
 
         public void TickTreatment()
         {
-            if (isReadyToShot > 0) isReadyToShot--;
-            if (IsReadyToMove > 0) IsReadyToMove--;
+            if (beforeShot > 0) beforeShot--;
+            if (beforeMoving > 0) beforeMoving--;
             if (RemainingDeathPenalty > 0) RemainingDeathPenalty--;
         }
 
-        public static ConsoleKey GetKeystrokes()
+        public void UpdatePlayerCommands()
         {
             if (Console.KeyAvailable)
-                return Console.ReadKey(true).Key;
-            else
-                return 0;
+            {
+                ConsoleKey key = Console.ReadKey(true).Key;
+                if (key == ConsoleKey.Spacebar)
+                    isShot = true;
+                else
+                    this.key = key;
+            }
         }
 
         public bool Move(MovableObject.Direction direction)
         {
-            if (IsReadyToMove == 0)
+            if (beforeMoving == 0)
             {
                 if (direction == this.direction)
                 {
@@ -43,7 +51,9 @@ namespace BadBattleCity
                 }
                 else
                     this.direction = direction;
-                IsReadyToMove = MoveFrequency;
+
+                beforeMoving = moveFrequency;
+                key = 0;
                 return true;
             }
             return false;
@@ -51,9 +61,10 @@ namespace BadBattleCity
 
         public bool Fire()
         {
-            if (isReadyToShot == 0)
+            if (beforeShot == 0)
             {
-                isReadyToShot = ShotFrequency;
+                beforeShot = ShotFrequency;
+                isShot = false;
                 return true;
             }
             return false;
